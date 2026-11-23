@@ -65,10 +65,10 @@ logger = _setup_logger()
 # ── Config Manager (inline, from config_manager.py) ─────────────────────
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "hermes_url": "http://192.168.1.109:8642/v1/chat/completions",
+    "hermes_url": "http://127.0.0.1:8642/v1/chat/completions",
     "api_key": "",
     "workers": 1,
-    "target_dir": r"C:/Users/kulim/Music",
+    "target_dir": "",
     "dry_run": False,
     "limit": None,
     "timeout": 1800,
@@ -460,7 +460,7 @@ def read_tags(filepath: str) -> Dict[str, Any]:
 
 # ── Hermes API call (from direct_analyzer.py) ───────────────────────────
 
-HERMES_URL = "http://192.168.1.109:8642/v1/chat/completions"
+HERMES_URL = "http://127.0.0.1:8642/v1/chat/completions"
 API_KEY = ""
 
 
@@ -1007,7 +1007,6 @@ def recognize_audio(filepath: str) -> Optional[Dict[str, Any]]:
     model = load_config().get("audio_model") or "effnet"
     candidates = [
         ["py", "-3.13", str(script), filepath, model],
-        [r"C:\Users\kulim\AppData\Local\Programs\Python\Python313\python.exe", str(script), filepath, model],
     ]
     last = "Python 3.13 mit onnxruntime fehlt"
     for cmd in candidates:
@@ -1441,7 +1440,7 @@ class VDJHandler(BaseHTTPRequestHandler):
         if not target_dir:
             # Use config's target_dir as default
             cfg = load_config()
-            target_dir = cfg.get("target_dir", r"C:/Users/kulim/Music")
+            target_dir = cfg.get("target_dir") or ""
 
         root = Path(target_dir)
         if not root.exists():
@@ -1848,7 +1847,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 
         if not target_dir:
             cfg = load_config()
-            target_dir = cfg.get("target_dir", r"C:/Users/kulim/Music")
+            target_dir = cfg.get("target_dir") or ""
 
         target_dir = str(Path(target_dir))
 
@@ -1885,7 +1884,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0023")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0024")
     print("=" * 60)
 
     # Start auto-save timer

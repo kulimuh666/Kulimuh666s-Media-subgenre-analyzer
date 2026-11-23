@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0023</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0024</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -33,17 +33,17 @@
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0023</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0024</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
   <table>
     <tr><th>Feld</th><th>Was es ist</th><th>Typisch</th></tr>
     <tr><td>Tool-Server</td><td>Dieses Programm. Liest Tags, schreibt Komponist und Jahr, spielt Dateien ab. Sieht nur Laufwerke auf dem PC, auf dem es läuft.</td><td><code>http://localhost:8765</code></td></tr>
-    <tr><td>Hermes API</td><td>Das LLM. Sucht und bewertet den Track. Darf auf einem anderen PC stehen.</td><td><code>http://192.168.1.109:8642/v1/chat/completions</code></td></tr>
+    <tr><td>Hermes API</td><td>Das LLM. Sucht und bewertet den Track. Darf auf einem anderen PC stehen.</td><td><code>http://127.0.0.1:8642/v1/chat/completions</code></td></tr>
     <tr><td>Hermes API Key</td><td>Bearer-Token des API-Servers. Steht in der Hermes-<code>.env</code> als <code>API_SERVER_KEY</code>.</td><td></td></tr>
   </table>
-  <p>Der Ziel-Ordner, zum Beispiel <code>F:\Traktor Music</code>, funktioniert nur, wenn der Tool-Server auf dem PC läuft, der dieses Laufwerk hat. Die Hermes-Adresse zeigt auf den PC, auf dem Hermes läuft.</p>
+  <p>Der Ziel-Ordner funktioniert nur, wenn der Tool-Server auf dem PC läuft, der dieses Laufwerk hat. Die Hermes-Adresse zeigt auf den PC, auf dem Hermes läuft.</p>
 
   <h2>Workflow</h2>
   <ol>
@@ -89,7 +89,7 @@ API_SERVER_PORT=8642</pre>
   <p>Oder <code>start_gui.bat</code> im selben Ordner. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0023</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0024</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>

@@ -1,0 +1,14 @@
+{
+  "hermes_url": "http://127.0.0.1:8642/v1/chat/completions",
+  "api_key": "",
+  "workers": 1,
+  "target_dir": "",
+  "dry_run": false,
+  "limit": 20,
+  "timeout": 1800,
+  "analyze_mode": "web",
+  "audio_model": "effnet",
+  "extra_tag": "user1",
+  "llm_backend": "hermes",
+  "summarize": false
+}
