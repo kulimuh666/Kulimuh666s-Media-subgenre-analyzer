@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0024</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0025</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -33,7 +33,7 @@
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0024</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0025</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
@@ -50,7 +50,7 @@
     <li>Auf dem PC mit der Musik <code>start_gui.bat</code> doppelklicken. Das startet den Server auf <code>localhost:8765</code> und öffnet diese Seite.</li>
     <li>Hermes API, Key, Worker, Timeout und Analyseart stehen unter Einstellungen. Ziel-Ordner ist ein Pfad auf diesem PC und bleibt auf der Hauptseite.</li>
     <li>Limit setzen, Aktualisieren. Fertige ausblenden lässt Dateien weg, deren Genre-Tag schon Daten hat. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
-    <li>Local und API stehen in der Zeile. Sie starten auch, wenn Subgenres schon da sind. Local startet die lokale LLM, falls sie noch nicht läuft, und fragt sie ohne Websuche. API ruft Hermes. Sind die Worker aus den Einstellungen schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
+    <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
     <li>In den Einstellungen wählst du EffNet, MAEST oder beide. Beide heißt: die Stile werden nach Score zusammengelegt, ohne eine zweite LLM. MagnaTagATune schreibt Gitarre, Rock, Metal, Stimme und Drums ins Mediafile, nach User 1 oder Album Artist. VirtualDJ muss dafür nicht laufen. Genre, Subgenres und diese Spalte haben einen Stift und schreiben direkt in die Datei.</li>
     <li>Analyseart Audio hört die ganze Datei, nicht nur drei Ausschnitte, und schreibt die erkannten Discogs-Stile in die Subgenres-Spalte und ins Komponist-Feld. Techno, Hard Techno, Minimal Techno, Schranz, Industrial, Psytrance, Goa Trance, Tech Trance, Progressive Trance und weitere, wenn das Modell sie hört. Das Genre-Feld bleibt unangetastet. Den passenden Text übernimmst du mit dem Genre-Button. Websuche und Direkt bleiben die anderen Analysearten.</li>
     <li>▶ spielt ab und wird zu ⏸. Ordner öffnet den Explorer. Der Stift neben dem Genre öffnet ein Fenster mit dem ganzen Genre-Text und schreibt ihn direkt in die Datei. Genre übernimmt die Subgenres ins Genre-Feld.</li>
@@ -89,7 +89,7 @@ API_SERVER_PORT=8642</pre>
   <p>Oder <code>start_gui.bat</code> im selben Ordner. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0024</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0025</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>

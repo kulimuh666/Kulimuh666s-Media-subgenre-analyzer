@@ -976,6 +976,7 @@ def write_composer_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
 _analysis_lock = threading.Lock()
 _is_analyzing = False
 _job_mode = None
+_job_model = None
 _analysis_error: Optional[str] = None
 
 
@@ -1001,10 +1002,16 @@ def get_analysis_error() -> Optional[str]:
         return _analysis_error
 
 
-def recognize_audio(filepath: str) -> Optional[Dict[str, Any]]:
+def active_audio_model() -> str:
+    return _job_model or load_config().get("audio_model") or "effnet"
+
+
+def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Run the selected local audio model. Python 3.15 has no onnxruntime wheel."""
     script = PLUGIN_DIR / "audio_style.py"
-    model = load_config().get("audio_model") or "effnet"
+    model = model or active_audio_model()
+    if model not in ("effnet", "maest", "both"):
+        model = "effnet"
     candidates = [
         ["py", "-3.13", str(script), filepath, model],
     ]
@@ -1073,7 +1080,7 @@ def ensure_local_llm() -> Optional[str]:
     return "Lokale LLM startet nicht. Runtime und 3B-Modell in den Einstellungen laden."
 
 
-def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode: Optional[str] = None) -> Dict[str, Any]:
+def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode: Optional[str] = None, audio_model: Optional[str] = None) -> Dict[str, Any]:
     """Process a single track: read tags → send to Hermes → write result."""
     display = Path(filepath).name
 
@@ -1106,7 +1113,7 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
     logger.info(f"Analyzing: {filepath} | {run_mode}")
     held = False
     if run_mode == "audio":
-        result = recognize_audio(filepath)
+        result = recognize_audio(filepath, audio_model)
     elif run_mode == "local":
         start_err = ensure_local_llm()
         if start_err:
@@ -1269,8 +1276,9 @@ def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = 
     _state_data["completed"] = analyzed
     save_state()
     set_analyzing(False)
-    global _job_mode
+    global _job_mode, _job_model
     _job_mode = None
+    _job_model = None
 
     logger.info(
         f"Analysis complete: {analyzed} success, {skipped} skipped, "
@@ -1607,8 +1615,9 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_post_analyze()
         elif path == '/api/stop':
             set_analyzing(False)
-            global _job_mode
+            global _job_mode, _job_model
             _job_mode = None
+            _job_model = None
             logger.info("Analysis stop requested")
             self._send_json({"message": "stop requested"})
         elif path == '/api/apply-genre':
@@ -1750,11 +1759,17 @@ class VDJHandler(BaseHTTPRequestHandler):
         if body is None:
             return
         fp = body.get("filepath") or ""
-        mode = body.get("mode") if body.get("mode") in ("local", "api") else "api"
+        mode = body.get("mode") or "api"
+        model = body.get("model") if body.get("model") in ("effnet", "maest", "both") else None
+        if mode in ("effnet", "maest", "both"):
+            model = mode
+            mode = "audio"
+        elif mode not in ("api", "local", "audio"):
+            mode = "api"
         if not fp or not Path(fp).is_file():
             self._send_json({"error": "file not found"}, 404)
             return
-        result = analyze_single_track(fp, False, force=True, mode=mode)
+        result = analyze_single_track(fp, False, force=True, mode=mode, audio_model=model)
         if result.get("status") == "busy":
             self._send_json({"busy": True, "running": result.get("running") or []}, 409)
             return
@@ -1862,8 +1877,10 @@ class VDJHandler(BaseHTTPRequestHandler):
         hide_done = bool(body.get("hide_done", False))
         picked = body.get("files") if isinstance(body.get("files"), list) else None
         forced = body.get("mode")
-        global _job_mode
+        forced_model = body.get("audio_model")
+        global _job_mode, _job_model
         _job_mode = forced if forced in ("web", "direct", "audio") else None
+        _job_model = forced_model if forced_model in ("effnet", "maest", "both") else None
         t = threading.Thread(
             target=run_analysis,
             args=(target_dir, dry_run, limit, hide_done, picked),
@@ -1884,7 +1901,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0024")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0025")
     print("=" * 60)
 
     # Start auto-save timer

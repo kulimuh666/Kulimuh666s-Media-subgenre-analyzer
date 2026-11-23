@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0024</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0025</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -305,7 +305,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0024</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0025</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings">Einstellungen</a>
@@ -411,7 +411,7 @@ const I18N = {
     workersRecommended: '1 (empfohlen)', targetFolder: 'Ziel-Ordner', targetPlaceholder: 'Ordner auf diesem PC',
     limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden', hideDone: 'Fertige ausblenden', clearLog: '🗑 Log leeren',
     analyzeAll: 'Alle analysieren', analyzeMarked: 'Markierte analysieren', noneMarked: 'Keine Datei markiert.',
-    localBtn: 'Local', apiBtn: 'API',
+    localBtn: 'Local', apiBtn: 'API', bothBtn: 'Beide',
     results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
     emptyResults: 'Noch keine Ergebnisse — Starte die Analyse.', console: '📟 Konsole',
     disconnected: '⚪ getrennt', running: '🟢 läuft', idle: '⚪ bereit',
@@ -439,7 +439,7 @@ const I18N = {
     workersRecommended: '1 (recommended)', targetFolder: 'Target folder', targetPlaceholder: 'Folder on this PC',
     limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data', hideDone: 'Hide finished', clearLog: '🗑 Clear log',
     analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', noneMarked: 'No file marked.',
-    localBtn: 'Local', apiBtn: 'API',
+    localBtn: 'Local', apiBtn: 'API', bothBtn: 'Both',
     results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
     emptyResults: 'No results yet — start the analysis.', console: '📟 Console',
     disconnected: '⚪ disconnected', running: '🟢 running', idle: '⚪ idle',
@@ -568,8 +568,9 @@ async function rowAnalyze(btn, mode) {
   const row = btn.closest('tr');
   const fp = row.dataset.fp;
   const name = fp.split(/[\\/]/).pop();
+  const labels = { effnet: 'EffNet', maest: 'MAEST', both: 'Beide', api: 'API' };
   if (mode === 'api' && !(loadedCfg.api_key || '').trim()) { log(t('needKey'), 'error'); return; }
-  log(mode === 'local' ? `Local: ${name}` : `API: ${name}`, 'info');
+  log(`${labels[mode] || mode}: ${name}`, 'info');
   btn.disabled = true;
   try {
     const res = await fetch(`${TOOL_SERVER}/api/row`, {
@@ -609,6 +610,7 @@ function startForced(mode) {
 // ── Start / Stop ──
 async function startAnalysis(onlyMarked, forceMode) {
   const runMode = forceMode || loadedCfg.analyze_mode || 'web';
+  const audioModel = loadedCfg.audio_model || 'effnet';
   const apiUrl = TOOL_SERVER;
   const apiKey = (loadedCfg.api_key || '').trim() || (runMode === 'audio' ? 'local' : '');
   if (!apiKey) { log(t('needKey'), 'error'); return; }
@@ -650,7 +652,7 @@ async function startAnalysis(onlyMarked, forceMode) {
   log('─────────────────────────────────────', 'info');
   log(t('startAnalysis'), 'success');
   log(`Tool-Server: ${apiUrl}`, 'info');
-  log(`Hermes: ${loadedCfg.hermes_url || ''} | ${runMode} | timeout ${loadedCfg.timeout || 1800}s`, 'info');
+  log(`Hermes: ${loadedCfg.hermes_url || ''} | ${runMode} | Modell ${audioModel} | timeout ${loadedCfg.timeout || 1800}s`, 'info');
   log(`${t('folderLog')}: ${targetDir || t('fromConfig')}`, 'info');
   log(`Worker: ${workers} | Limit: ${limit || t('noLimit')}`, 'info');
 
@@ -667,6 +669,7 @@ async function startAnalysis(onlyMarked, forceMode) {
       hide_done: $('hideDone').checked,
       files: files,
       mode: runMode,
+      audio_model: audioModel,
       resume: true
     }, abortController.signal);
 
@@ -1003,7 +1006,9 @@ function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, arti
     <td>${jahr ? escapeHtml(String(jahr)) : dash()}</td>
     <td><span class="status-badge ${badge.cls}" title="${escapeHtml(error || '')}">${badge.label}</span>${error ? `<div class="row-error">${escapeHtml(error)}</div>` : ''}</td>
     <td class="row-actions">
-      <button class="btn-play" onclick="rowAnalyze(this, 'local')" data-i18n="localBtn">Local</button>
+      <button class="btn-play" onclick="rowAnalyze(this, 'effnet')">EffNet</button>
+      <button class="btn-play" onclick="rowAnalyze(this, 'maest')">MAEST</button>
+      <button class="btn-play" onclick="rowAnalyze(this, 'both')" data-i18n="bothBtn">Beide</button>
       <button class="btn-play" onclick="rowAnalyze(this, 'api')" data-i18n="apiBtn">API</button>
       <button class="btn-play play-btn" onclick="playTrack(this.closest('tr').dataset.fp)">▶</button>
       <button class="btn-play btn-folder" onclick="revealTrack(this.closest('tr').dataset.fp)">${t('folder')}</button>
