@@ -1169,17 +1169,16 @@ def ensure_audio_deps(exe: str) -> tuple[bool, str]:
         return False, str(exc)
     if probe.returncode == 0:
         return True, ""
-    logger.info(f"Installing av numpy onnxruntime into {exe}")
+    print(f"Installiere av numpy onnxruntime in {exe}")
     try:
-        inst = subprocess.run(
-            [exe, "-m", "pip", "install", "av", "numpy", "onnxruntime"],
-            capture_output=True, text=True, timeout=180,
-        )
+        inst = subprocess.run([exe, "-m", "pip", "install", "av", "numpy", "onnxruntime"], timeout=300)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return False, str(exc)
     if inst.returncode != 0:
-        tail = ((inst.stderr or inst.stdout) or "").strip()[-300:]
-        return False, tail or "pip install failed"
+        return False, "pip install fehlgeschlagen"
+    probe = subprocess.run([exe, "-c", check], capture_output=True, text=True, timeout=30)
+    if probe.returncode != 0:
+        return False, ((probe.stderr or probe.stdout) or "Import nach der Installation fehlgeschlagen").strip()[-300:]
     return True, ""
 
 
@@ -2244,11 +2243,30 @@ class VDJHandler(BaseHTTPRequestHandler):
 
 # ── Main / Entry Point ────────────────────────────────────────────────
 
+def prepare_runtime() -> None:
+    print("Pruefe Abhaengigkeiten...")
+    if mutagen_ready():
+        print(f"mutagen OK")
+    else:
+        print("mutagen fehlt und konnte nicht installiert werden")
+    exe = audio_python()
+    if not exe:
+        print("Kein Python 3.11-3.14. EffNet braucht 3.12, die Installation ist fehlgeschlagen.")
+        return
+    print(f"Audio-Python: {exe}")
+    ok, err = ensure_audio_deps(exe)
+    if ok:
+        print("av, numpy, onnxruntime OK")
+    else:
+        print(f"Audio-Pakete fehlen: {err}")
+
+
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0035")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0036")
     print("=" * 60)
+    prepare_runtime()
 
     # Start auto-save timer
     start_auto_save()

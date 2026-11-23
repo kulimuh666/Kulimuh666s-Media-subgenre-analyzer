@@ -1,9 +1,9 @@
 @echo off
-title Kulimuh666's Media Subgenre Analyzer V.0035
+title Kulimuh666's Media Subgenre Analyzer V.0036
 cd /d "%~dp0"
 
 echo ========================================
-echo  Kulimuh666's Media Subgenre Analyzer V.0035
+echo  Kulimuh666's Media Subgenre Analyzer V.0036
 echo ========================================
 echo.
 
@@ -13,7 +13,7 @@ for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8765" ^| findstr "ABHOREN L
     taskkill /PID %%P /F >nul 2>&1
 )
 
-echo Starte Server...
+echo Starte Server. Abhaengigkeiten werden im Server-Fenster geprueft.
 where py >nul 2>&1
 if %errorlevel%==0 (
   start "VDJ Server" cmd /k py -3 server.py
