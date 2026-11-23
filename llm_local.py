@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import ssl
 import subprocess
 import threading
 import urllib.error
@@ -125,11 +126,9 @@ def _set_job(which, **fields):
         job.update(fields)
 
 
-def _download_one(url, dest: Path):
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    part = dest.with_suffix(dest.suffix + ".part")
+def _write_http(url, part: Path, label: str) -> None:
     req = urllib.request.Request(url, headers={"User-Agent": "vdj-analyzer"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=120, context=ssl.create_default_context()) as resp:
         total = int(resp.headers.get("Content-Length") or 0)
         done = 0
         with part.open("wb") as out:
@@ -139,7 +138,32 @@ def _download_one(url, dest: Path):
                     break
                 out.write(chunk)
                 done += len(chunk)
-                _set_job(dest.name, bytes=done, total=total, state="downloading")
+                _set_job(label, bytes=done, total=total, state="downloading")
+
+
+def _write_curl(url, part: Path) -> None:
+    proc = subprocess.run(
+        ["curl.exe", "-L", "--fail", "--retry", "2", "-o", str(part), url],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    if proc.returncode != 0 or not part.is_file() or part.stat().st_size <= 0:
+        detail = ((proc.stderr or proc.stdout) or "curl.exe fehlgeschlagen").strip()[-300:]
+        raise RuntimeError(detail)
+
+
+def _download_one(url, dest: Path):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_suffix(dest.suffix + ".part")
+    try:
+        _write_http(url, part, dest.name)
+    except Exception as exc:
+        if part.exists():
+            part.unlink()
+        text = str(exc).upper()
+        if "CERTIFICATE" not in text and "SSL" not in text:
+            raise
+        print(f"Python-Zertifikat abgelehnt, lade mit curl.exe: {dest.name}")
+        _write_curl(url, part)
     part.replace(dest)
 
 
@@ -163,6 +187,25 @@ def _run_download(which):
     except Exception as exc:
         logger.error(f"LLM download failed {which}: {exc}")
         _set_job(which, state="error", error=str(exc))
+
+
+def ensure_audio_models() -> tuple[bool, str]:
+    missing = []
+    for spec in CATALOG["audio"]["files"]:
+        dest = MODELS / spec["name"]
+        if not dest.is_file() or dest.stat().st_size <= 0:
+            missing.append(spec)
+    if not missing:
+        return True, ""
+    print("Lade Audio-Modelle nach models ...")
+    try:
+        for spec in missing:
+            dest = MODELS / spec["name"]
+            print(f"  {spec['name']}")
+            _download_one(spec["url"], dest)
+    except Exception as exc:
+        return False, str(exc)
+    return True, ""
 
 
 def start_download(which):

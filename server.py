@@ -2263,12 +2263,17 @@ def prepare_runtime() -> None:
         print("av, numpy, onnxruntime OK")
     else:
         print(f"Audio-Pakete fehlen: {err}")
+    ok, model_err = llm_local.ensure_audio_models()
+    if ok:
+        print("Audio-Modelle OK")
+    else:
+        print(f"Audio-Modelle fehlen: {model_err}")
 
 
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0037")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0038")
     print("=" * 60)
     prepare_runtime()
 
