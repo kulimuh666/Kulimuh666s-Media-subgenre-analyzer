@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0036</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0037</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -33,7 +33,7 @@
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0036</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0037</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
@@ -86,10 +86,10 @@ API_SERVER_PORT=8642</pre>
 
   <h2>Tool-Server dieser App</h2>
   <pre>py -3.15 server.py</pre>
-  <p>Oder <code>start_gui.bat</code> im selben Ordner. Vor dem Port prüft das Server-Fenster mutagen und installiert av, numpy und onnxruntime in ein Python 3.11–3.14. Python 3.15 bekommt kein onnxruntime. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
+  <p>Oder <code>start_gui.bat</code> im selben Ordner. Vor dem Port prüft das Server-Fenster mutagen und installiert av, numpy und onnxruntime in ein Python 3.11–3.14. Audio-Modelle laden in den Einstellungen holt EffNet und MusicNN nach <code>models</code>. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0036</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0037</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>
@@ -103,7 +103,7 @@ API_SERVER_PORT=8642</pre>
   </ol>
   <h2>Formats</h2>
   <p>Supported: mp3, flac, m4a, mp4, aac, ogg, opus. m4a and mp4, including a video track, are read and written as MP4.</p>
-  <p>Before the port opens, the server window checks mutagen and installs av, numpy and onnxruntime into a Python 3.11–3.14. Python 3.15 does not get onnxruntime.</p>
+  <p>Before the port opens, the server window checks mutagen and installs av, numpy and onnxruntime into a Python 3.11–3.14. Download audio models in Settings fetches EffNet and MusicNN into <code>models</code>.</p>
   <h2>Hermes</h2>
   <p>Install: <a href="https://hermes-agent.nousresearch.com/">hermes-agent.nousresearch.com</a>. API server needs <code>API_SERVER_HOST=0.0.0.0</code> and <code>API_SERVER_PORT=8642</code> when the tool server runs on another PC. Start with <code>hermes gateway</code>.</p>
   </div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0036</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0037</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,7 +69,7 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0036</span>
+  <span class="badge">V.0037</span>
   <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
   <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
@@ -150,6 +150,7 @@ button {
   </div>
   <div class="row">
     <button type="button" onclick="llm('runtime')" data-i18n="dlRuntime">Runtime laden</button>
+    <button type="button" onclick="llm('audio')" data-i18n="dlAudio">Audio-Modelle laden</button>
     <button type="button" onclick="llm('analyze')" data-i18n="dlAnalyze">3B laden</button>
     <button type="button" onclick="llm('summarize')" data-i18n="dlSummary">1.5B laden</button>
     <button type="button" onclick="llmStart()" data-i18n="llmStart">Lokal starten</button>
@@ -180,7 +181,7 @@ const I18N = {
     pythonNoOnnx: 'Python 3.15 geht nicht. Gespeichert ist ein passendes, onnxruntime kommt beim Lauf:\n',
     backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
     backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
-    summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
+    summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAudio: 'Audio-Modelle laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
   },
   en: {
     title: 'Settings', back: 'Back', help: '? Help', workers: 'Workers',
@@ -198,7 +199,7 @@ const I18N = {
     pythonNoOnnx: 'Python 3.15 cannot be used. A compatible one is saved; onnxruntime is installed on the next run:\n',
     backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
     backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
-    summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
+    summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAudio: 'Download audio models', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
   }
 };
 let lang = localStorage.getItem('vdj.lang') || 'de';
@@ -325,7 +326,7 @@ async function refreshLlm() {
     if (!res.ok) return;
     const data = await res.json();
     const jobs = Object.entries(data.jobs || {}).map(([k, v]) => `${k}: ${v.state || ''} ${v.error || ''}`).join(' | ');
-    $('llmStatus').textContent = `Runtime ${data.runtime ? 'da' : 'fehlt'} · 3B ${data.analyze_model ? 'da' : 'fehlt'} · 1.5B ${data.summarize_model ? 'da' : 'fehlt'} · Ports ${data.analyze_up ? '8081' : '–'}/${data.summarize_up ? '8082' : '–'} ${jobs}`;
+    $('llmStatus').textContent = `Runtime ${data.runtime ? 'da' : 'fehlt'} · Audio ${data.audio_models ? 'da' : 'fehlt'} · 3B ${data.analyze_model ? 'da' : 'fehlt'} · 1.5B ${data.summarize_model ? 'da' : 'fehlt'} · Ports ${data.analyze_up ? '8081' : '–'}/${data.summarize_up ? '8082' : '–'} ${jobs}`;
   } catch (e) { /* server down */ }
 }
 setInterval(refreshLlm, 3000);

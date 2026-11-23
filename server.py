@@ -1013,12 +1013,22 @@ AUDIO_PY_OK = {(3, 11), (3, 12), (3, 13), (3, 14)}
 _py_install_lock = threading.Lock()
 
 
+def run_text(cmd, timeout=30, env=None):
+    """Capture child text. German Windows writes cp1252 (ü = 0xfc); do not let that kill the reader thread."""
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        env=env,
+    )
+
+
 def python_version(exe: str) -> tuple[int, int]:
     try:
-        proc = subprocess.run(
-            [exe, "-c", "import sys; print(sys.version_info[0], sys.version_info[1])"],
-            capture_output=True, text=True, timeout=20,
-        )
+        proc = run_text([exe, "-c", "import sys; print(sys.version_info[0], sys.version_info[1])"], timeout=20)
         parts = (proc.stdout or "").split()
         if proc.returncode == 0 and len(parts) >= 2:
             return int(parts[0]), int(parts[1])
@@ -1046,7 +1056,7 @@ def find_pythons() -> List[Dict[str, Any]]:
 
     add(sys.executable)
     try:
-        listed = subprocess.run(["py", "-0p"], capture_output=True, text=True, timeout=15)
+        listed = run_text(["py", "-0p"], timeout=15)
         for line in (listed.stdout or "").splitlines():
             parts = line.strip().split()
             if parts:
@@ -1054,14 +1064,14 @@ def find_pythons() -> List[Dict[str, Any]]:
     except (OSError, subprocess.TimeoutExpired):
         pass
     try:
-        where = subprocess.run(["where.exe", "python"], capture_output=True, text=True, timeout=10)
+        where = run_text(["where.exe", "python"], timeout=10)
         for line in (where.stdout or "").splitlines():
             add(line.strip())
     except (OSError, subprocess.TimeoutExpired):
         pass
     local = os.environ.get("LOCALAPPDATA", "")
     program = os.environ.get("ProgramFiles", "")
-    for root in (Path(local) / "Programs" / "Python", Path(program)):
+    for root in (Path(local) / "Programs" / "Python", Path(program), Path("C:/")):
         if not root.is_dir():
             continue
         for exe in root.glob("Python*/python.exe"):
@@ -1076,10 +1086,7 @@ def find_pythons() -> List[Dict[str, Any]]:
             detail = f"Python {major}.{minor}: kein onnxruntime"
         else:
             try:
-                probe = subprocess.run(
-                    [exe, "-c", "import onnxruntime; print(onnxruntime.__version__)"],
-                    capture_output=True, text=True, timeout=20,
-                )
+                probe = run_text([exe, "-c", "import onnxruntime; print(onnxruntime.__version__)"], timeout=20)
                 onnx = probe.returncode == 0
                 detail = ((probe.stdout or probe.stderr) or "").strip()[:120]
             except (OSError, subprocess.TimeoutExpired) as exc:
@@ -1113,14 +1120,11 @@ def install_python_312() -> str:
         env = os.environ.copy()
         env["PYLAUNCHER_ALLOW_INSTALL"] = "1"
         try:
-            subprocess.run(["py", "install", "3.12"], capture_output=True, text=True, timeout=300, env=env)
+            run_text(["py", "install", "3.12"], timeout=300, env=env)
         except (OSError, subprocess.TimeoutExpired):
             pass
         try:
-            proc = subprocess.run(
-                ["py", "-3.12", "-c", "import sys; print(sys.executable)"],
-                capture_output=True, text=True, timeout=40, env=env,
-            )
+            proc = run_text(["py", "-3.12", "-c", "import sys; print(sys.executable)"], timeout=40, env=env)
             exe = (proc.stdout or "").strip()
             if proc.returncode == 0 and Path(exe).is_file() and python_version(exe) in AUDIO_PY_OK:
                 remember_python(exe)
@@ -1128,10 +1132,10 @@ def install_python_312() -> str:
         except (OSError, subprocess.TimeoutExpired):
             pass
         try:
-            subprocess.run(
+            run_text(
                 ["winget", "install", "-e", "--id", "Python.Python.3.12",
                  "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"],
-                capture_output=True, text=True, timeout=300,
+                timeout=300,
             )
         except (OSError, subprocess.TimeoutExpired):
             pass
@@ -1164,7 +1168,7 @@ def ensure_audio_deps(exe: str) -> tuple[bool, str]:
         return False, "Python 3.15 hat kein onnxruntime. Ein 3.12 wird gebraucht."
     check = "import av, numpy, onnxruntime"
     try:
-        probe = subprocess.run([exe, "-c", check], capture_output=True, text=True, timeout=30)
+        probe = run_text([exe, "-c", check], timeout=30)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return False, str(exc)
     if probe.returncode == 0:
@@ -1176,7 +1180,7 @@ def ensure_audio_deps(exe: str) -> tuple[bool, str]:
         return False, str(exc)
     if inst.returncode != 0:
         return False, "pip install fehlgeschlagen"
-    probe = subprocess.run([exe, "-c", check], capture_output=True, text=True, timeout=30)
+    probe = run_text([exe, "-c", check], timeout=30)
     if probe.returncode != 0:
         return False, ((probe.stderr or probe.stdout) or "Import nach der Installation fehlgeschlagen").strip()[-300:]
     return True, ""
@@ -1199,7 +1203,7 @@ def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict
     last = "Audio-Python konnte das Skript nicht starten"
     for cmd in candidates:
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            proc = run_text(cmd, timeout=300)
         except (OSError, subprocess.TimeoutExpired) as exc:
             last = str(exc)
             continue
@@ -2264,7 +2268,7 @@ def prepare_runtime() -> None:
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0036")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0037")
     print("=" * 60)
     prepare_runtime()
 

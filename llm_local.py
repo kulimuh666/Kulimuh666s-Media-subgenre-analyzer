@@ -50,6 +50,27 @@ CATALOG = {
             },
         ],
     },
+    "audio": {
+        "label": "Discogs-EffNet and MTT-MusicNN",
+        "files": [
+            {
+                "url": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx",
+                "name": "discogs-effnet-bsdynamic-1.onnx",
+            },
+            {
+                "url": "https://essentia.upf.edu/models/music-style-classification/discogs-effnet/discogs-effnet-bs64-1.json",
+                "name": "discogs-effnet-bs64-1.json",
+            },
+            {
+                "url": "https://essentia.upf.edu/models/autotagging/mtt/mtt-musicnn-1.onnx",
+                "name": "mtt-musicnn-1.onnx",
+            },
+            {
+                "url": "https://essentia.upf.edu/models/autotagging/mtt/mtt-musicnn-1.json",
+                "name": "mtt-musicnn-1.json",
+            },
+        ],
+    },
 }
 
 _lock = threading.Lock()
@@ -85,6 +106,7 @@ def status():
         "runtime": _server_exe() is not None,
         "analyze_model": _model_path("analyze").is_file(),
         "summarize_model": _model_path("summarize").is_file(),
+        "audio_models": all((MODELS / spec["name"]).is_file() for spec in CATALOG["audio"]["files"]),
         "analyze_up": _listening(ANALYZE_PORT),
         "summarize_up": _listening(SUMMARY_PORT),
         "models_dir": str(MODELS),
