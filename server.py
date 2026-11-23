@@ -1186,6 +1186,38 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
         return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr}
 
 
+def probe_hermes(url: str, key: str) -> Dict[str, Any]:
+    if not url or not key:
+        return {"ok": False, "error": "Adresse oder Key fehlt"}
+    payload = json.dumps({
+        "model": "hermes-agent",
+        "messages": [{"role": "user", "content": "Reply with the single word OK."}],
+        "max_tokens": 16,
+        "temperature": 0,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            raw = resp.read(4000).decode("utf-8", "replace")
+            status = resp.status
+    except urllib.error.HTTPError as exc:
+        body = exc.read(400).decode("utf-8", "replace")
+        return {"ok": False, "error": f"HTTP {exc.code}: {body[:300]}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    detail = ""
+    try:
+        parsed = json.loads(raw)
+        detail = str(((parsed.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()[:200]
+    except json.JSONDecodeError:
+        detail = raw[:200]
+    return {"ok": True, "status": status, "detail": detail or "Antwort ohne Text"}
+
+
 def file_has_genre(filepath: str) -> bool:
     tags = read_tags(filepath)
     return bool((tags.get('genre') or '').strip())
@@ -1647,6 +1679,8 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_apply_genre()
         elif path == '/api/apply-field':
             self._handle_apply_field()
+        elif path == '/api/test-api':
+            self._handle_test_api()
         elif path == '/api/done':
             self._handle_done()
         elif path == '/api/reveal':
@@ -1801,6 +1835,17 @@ class VDJHandler(BaseHTTPRequestHandler):
         code = 200 if result.get("status") == "success" else 500
         self._send_json(result, code)
 
+    def _handle_test_api(self):
+        body = self._parse_json_body()
+        if body is None:
+            return
+        cfg = load_config()
+        url = (body.get("hermes_url") or cfg.get("hermes_url") or "").strip()
+        key = (body.get("api_key") or cfg.get("api_key") or "").strip()
+        result = probe_hermes(url, key)
+        logger.info(f"API test {url} ok={result.get('ok')} {result.get('error') or result.get('detail') or ''}")
+        self._send_json(result, 200 if result.get("ok") else 400)
+
     def _handle_done(self):
         body = self._parse_json_body()
         if body is None:
@@ -1939,7 +1984,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0027")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0028")
     print("=" * 60)
 
     # Start auto-save timer

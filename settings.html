@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0027</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0028</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,7 +69,7 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0027</span>
+  <span class="badge">V.0028</span>
   <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
   <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
@@ -85,6 +85,9 @@ button {
   <div class="field">
     <label for="apiKey">Hermes API Key</label>
     <input id="apiKey" type="password" placeholder="Bearer Token">
+  </div>
+  <div class="row">
+    <button type="button" onclick="testApi()" data-i18n="testApi">API testen</button>
   </div>
   <div class="field">
     <label for="workers" data-i18n="workers">Worker</label>
@@ -161,6 +164,7 @@ const I18N = {
     audioModel: 'Lokales Hör-Modell', extraTag: 'Instrumente schreiben nach',
     extraHint: 'MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.',
     save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
+    testApi: 'API testen', testOk: 'API ok.', testFail: 'API nicht ok: ', testNeed: 'Adresse und Key eintragen.',
     backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
     backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
     summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
@@ -174,6 +178,7 @@ const I18N = {
     audioModel: 'Local listening model', extraTag: 'Write instruments to',
     extraHint: 'MagnaTagATune: guitar, rock, metal, voice, drums. Written into the file. VirtualDJ does not need to be running. If User 1 cannot be written, album artist is used.',
     save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
+    testApi: 'Test API', testOk: 'API ok.', testFail: 'API not ok: ', testNeed: 'Enter the address and key.',
     backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
     backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
     summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
@@ -206,6 +211,23 @@ async function load() {
   $('llmBackend').value = cfg.llm_backend === 'local' ? 'local' : 'hermes';
   $('summarize').checked = !!cfg.summarize;
   refreshLlm();
+}
+async function testApi() {
+  const url = $('hermesUrl').value.trim();
+  const key = $('apiKey').value.trim();
+  if (!url || !key) { alert(t('testNeed')); return; }
+  try {
+    const res = await fetch(`${TOOL}/api/test-api`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hermes_url: url, api_key: key })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.ok) alert(t('testOk') + (data.detail ? '\n' + data.detail : ''));
+    else alert(t('testFail') + (data.error || res.status));
+  } catch (e) {
+    alert(t('testFail') + e.message);
+  }
 }
 async function save() {
   $('status').textContent = '';
