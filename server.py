@@ -1065,18 +1065,55 @@ def find_pythons() -> List[Dict[str, Any]]:
     return found
 
 
+def audio_python() -> str:
+    cfg_py = (load_config().get("python_path") or "").strip()
+    if cfg_py and Path(cfg_py).is_file():
+        return cfg_py
+    try:
+        proc = subprocess.run(["py", "-3", "-c", "import sys; print(sys.executable)"], capture_output=True, text=True, timeout=20)
+        exe = (proc.stdout or "").strip()
+        if proc.returncode == 0 and Path(exe).is_file():
+            return exe
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return sys.executable
+
+
+def ensure_audio_deps(exe: str) -> tuple[bool, str]:
+    check = "import av, numpy, onnxruntime"
+    try:
+        probe = subprocess.run([exe, "-c", check], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if probe.returncode == 0:
+        return True, ""
+    logger.info(f"Installing av numpy onnxruntime into {exe}")
+    try:
+        inst = subprocess.run(
+            [exe, "-m", "pip", "install", "av", "numpy", "onnxruntime"],
+            capture_output=True, text=True, timeout=180,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if inst.returncode != 0:
+        tail = ((inst.stderr or inst.stdout) or "").strip()[-300:]
+        return False, tail or "pip install failed"
+    return True, ""
+
+
 def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Run the selected local audio model. Python 3.15 has no onnxruntime wheel."""
     script = PLUGIN_DIR / "audio_style.py"
     model = model or active_audio_model()
     if model not in ("effnet", "maest", "both"):
         model = "effnet"
-    cfg_py = (load_config().get("python_path") or "").strip()
-    if cfg_py and Path(cfg_py).is_file():
-        candidates = [[cfg_py, str(script), filepath, model]]
-    else:
-        candidates = [["py", "-3", str(script), filepath, model]]
-    last = "Python mit onnxruntime fehlt. In den Einstellungen suchen."
+    cfg_py = audio_python()
+    ok, dep_err = ensure_audio_deps(cfg_py)
+    if not ok:
+        logger.error(f"AUDIO deps {cfg_py}: {dep_err}")
+        return {"error": dep_err or "av numpy onnxruntime fehlen"}
+    candidates = [[cfg_py, str(script), filepath, model]]
+    last = "Audio-Python konnte das Skript nicht starten"
     for cmd in candidates:
         try:
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -2126,7 +2163,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0033")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0034")
     print("=" * 60)
 
     # Start auto-save timer
