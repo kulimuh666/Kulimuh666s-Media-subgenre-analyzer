@@ -10,5 +10,6 @@
   "audio_model": "effnet",
   "extra_tag": "user1",
   "llm_backend": "hermes",
-  "summarize": false
+  "summarize": false,
+  "python_path": ""
 }

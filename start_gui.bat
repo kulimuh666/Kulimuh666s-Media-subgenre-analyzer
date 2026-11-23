@@ -1,9 +1,9 @@
 @echo off
-title Kulimuh666's Media Subgenre Analyzer V.0032
+title Kulimuh666's Media Subgenre Analyzer V.0033
 cd /d "%~dp0"
 
 echo ========================================
-echo  Kulimuh666's Media Subgenre Analyzer V.0032
+echo  Kulimuh666's Media Subgenre Analyzer V.0033
 echo ========================================
 echo.
 
@@ -14,7 +14,12 @@ for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8765" ^| findstr "ABHOREN L
 )
 
 echo Starte Server...
-start "VDJ Server" cmd /k py -3.15 server.py
+where py >nul 2>&1
+if %errorlevel%==0 (
+  start "VDJ Server" cmd /k py -3 server.py
+) else (
+  start "VDJ Server" cmd /k python server.py
+)
 
 echo Warte auf Server...
 timeout /t 3 >nul

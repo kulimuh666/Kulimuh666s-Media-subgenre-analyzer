@@ -79,6 +79,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "extra_tag": "user1",
     "llm_backend": "hermes",
     "summarize": False,
+    "python_path": "",
 }
 
 _config_lock = threading.Lock()
@@ -1008,16 +1009,74 @@ def active_audio_model() -> str:
     return _job_model or load_config().get("audio_model") or "effnet"
 
 
+def find_pythons() -> List[Dict[str, Any]]:
+    seen = set()
+    paths: List[str] = []
+
+    def add(raw: str) -> None:
+        text = str(raw or "").strip().strip('"')
+        if not text.lower().endswith("python.exe"):
+            return
+        path = Path(text)
+        if not path.is_file():
+            return
+        key = str(path.resolve()).lower()
+        if key in seen:
+            return
+        seen.add(key)
+        paths.append(str(path.resolve()))
+
+    add(sys.executable)
+    try:
+        listed = subprocess.run(["py", "-0p"], capture_output=True, text=True, timeout=15)
+        for line in (listed.stdout or "").splitlines():
+            parts = line.strip().split()
+            if parts:
+                add(parts[-1])
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    try:
+        where = subprocess.run(["where.exe", "python"], capture_output=True, text=True, timeout=10)
+        for line in (where.stdout or "").splitlines():
+            add(line.strip())
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    local = os.environ.get("LOCALAPPDATA", "")
+    program = os.environ.get("ProgramFiles", "")
+    for root in (Path(local) / "Programs" / "Python", Path(program)):
+        if not root.is_dir():
+            continue
+        for exe in root.glob("Python*/python.exe"):
+            add(str(exe))
+    found = []
+    for exe in paths[:12]:
+        onnx = False
+        detail = ""
+        try:
+            probe = subprocess.run(
+                [exe, "-c", "import onnxruntime; print(onnxruntime.__version__)"],
+                capture_output=True, text=True, timeout=20,
+            )
+            onnx = probe.returncode == 0
+            detail = ((probe.stdout or probe.stderr) or "").strip()[:120]
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            detail = str(exc)[:120]
+        found.append({"path": exe, "onnx": onnx, "detail": detail})
+    return found
+
+
 def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Run the selected local audio model. Python 3.15 has no onnxruntime wheel."""
     script = PLUGIN_DIR / "audio_style.py"
     model = model or active_audio_model()
     if model not in ("effnet", "maest", "both"):
         model = "effnet"
-    candidates = [
-        ["py", "-3.13", str(script), filepath, model],
-    ]
-    last = "Python 3.13 mit onnxruntime fehlt"
+    cfg_py = (load_config().get("python_path") or "").strip()
+    if cfg_py and Path(cfg_py).is_file():
+        candidates = [[cfg_py, str(script), filepath, model]]
+    else:
+        candidates = [["py", "-3", str(script), filepath, model]]
+    last = "Python mit onnxruntime fehlt. In den Einstellungen suchen."
     for cmd in candidates:
         try:
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -1550,6 +1609,10 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_get_files(params)
         elif path == '/api/log':
             self._handle_get_log(params)
+        elif path == '/api/python':
+            current = (load_config().get("python_path") or "").strip()
+            found = find_pythons()
+            self._send_json({"current": current, "found": found})
         elif path == '/api/status':
             self._handle_get_status()
         elif path == '/api/llm':
@@ -2063,7 +2126,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0032")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0033")
     print("=" * 60)
 
     # Start auto-save timer
