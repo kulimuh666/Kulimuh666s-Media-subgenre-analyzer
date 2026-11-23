@@ -22,6 +22,8 @@ import json
 import logging
 import os
 import re
+import io
+import zipfile
 import ctypes
 import subprocess
 import sys
@@ -1186,6 +1188,69 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
         return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr}
 
 
+def update_from_github() -> Dict[str, Any]:
+    repo = "kulimuh666/Kulimuh666s-Media-subgenre-analyzer"
+    api = f"https://api.github.com/repos/{repo}/releases/latest"
+    headers = {"User-Agent": "Kulimuh666-Media-Subgenre-Analyzer", "Accept": "application/vnd.github+json"}
+    try:
+        req = urllib.request.Request(api, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            release = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    tag = str(release.get("tag_name") or "")
+    remote = int(re.sub(r"\D", "", tag) or "0")
+    local_text = (PLUGIN_DIR / "VERSION").read_text(encoding="utf-8").strip() if (PLUGIN_DIR / "VERSION").is_file() else "0"
+    local = int(re.sub(r"\D", "", local_text) or "0")
+    if remote <= local:
+        shown = f"V.{local:04d}"
+        return {"ok": True, "current": True, "version": shown, "message": f"Schon die neueste Version {shown}."}
+    zip_url = ""
+    prefix = f"https://github.com/{repo}/releases/download/"
+    for asset in release.get("assets") or []:
+        name = str(asset.get("name") or "")
+        url = str(asset.get("browser_download_url") or "")
+        if name.lower().endswith(".zip") and url.startswith(prefix):
+            zip_url = url
+            break
+    if not zip_url:
+        return {"ok": False, "error": "Kein Zip in der neuesten Version."}
+    try:
+        req = urllib.request.Request(zip_url, headers={"User-Agent": "Kulimuh666-Media-Subgenre-Analyzer"})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            blob = resp.read()
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    skip_names = {"config.json", "done.json", "state.json", "analyze.log"}
+    skip_dirs = {"models", "runtime", "release", ".git", "__pycache__", "_GENRE fehlt"}
+    written = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(blob)) as zf:
+            for info in zf.infolist():
+                if info.is_dir():
+                    continue
+                rel = Path(info.filename)
+                if rel.is_absolute() or ".." in rel.parts or not rel.parts:
+                    return {"ok": False, "error": "Zip enthält einen unsicheren Pfad."}
+                if rel.parts[0] in skip_dirs or rel.name in skip_names:
+                    continue
+                if rel.suffix.lower() in {".mp3", ".flac", ".ogg", ".opus", ".m4a", ".zip"}:
+                    continue
+                target = PLUGIN_DIR.joinpath(*rel.parts)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(zf.read(info))
+                written.append(rel.as_posix())
+    except zipfile.BadZipFile:
+        return {"ok": False, "error": "Zip ist beschädigt."}
+    return {
+        "ok": True,
+        "current": False,
+        "version": tag,
+        "files": len(written),
+        "message": f"Aktualisiert auf {tag}. Server-Fenster schließen und start_gui.bat neu starten. config.json und Modelle bleiben.",
+    }
+
+
 def probe_hermes(url: str, key: str) -> Dict[str, Any]:
     if not url or not key:
         return {"ok": False, "error": "Adresse oder Key fehlt"}
@@ -1682,6 +1747,8 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_apply_genre()
         elif path == '/api/apply-field':
             self._handle_apply_field()
+        elif path == '/api/update':
+            self._handle_update()
         elif path == '/api/test-api':
             self._handle_test_api()
         elif path == '/api/done':
@@ -1838,6 +1905,11 @@ class VDJHandler(BaseHTTPRequestHandler):
         code = 200 if result.get("status") == "success" else 500
         self._send_json(result, code)
 
+    def _handle_update(self):
+        result = update_from_github()
+        logger.info(f"Update {result.get('version') or ''} ok={result.get('ok')} {result.get('error') or result.get('message') or ''}")
+        self._send_json(result, 200 if result.get("ok") else 400)
+
     def _handle_test_api(self):
         body = self._parse_json_body()
         if body is None:
@@ -1987,7 +2059,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0029")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0030")
     print("=" * 60)
 
     # Start auto-save timer

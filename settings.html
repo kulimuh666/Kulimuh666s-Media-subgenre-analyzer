@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0029</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0030</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,7 +69,7 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0029</span>
+  <span class="badge">V.0030</span>
   <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
   <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
@@ -149,6 +149,7 @@ button {
   <p id="llmStatus" class="hint"></p>
   <div class="row">
     <button type="button" onclick="save()" data-i18n="save">Speichern</button>
+    <button type="button" onclick="updateApp()" data-i18n="updateApp">Aktualisieren</button>
     <span id="status"></span>
   </div>
 </div>
@@ -165,6 +166,7 @@ const I18N = {
     extraHint: 'MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.',
     save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
     testApi: 'API testen', testOk: 'API ok.', testFail: 'API nicht ok: ', testNeed: 'Adresse und Key eintragen.',
+    updateApp: 'Aktualisieren', updateBusy: 'Suche die neueste GitHub-Version…',
     backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
     backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
     summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
@@ -179,6 +181,7 @@ const I18N = {
     extraHint: 'MagnaTagATune: guitar, rock, metal, voice, drums. Written into the file. VirtualDJ does not need to be running. If User 1 cannot be written, album artist is used.',
     save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
     testApi: 'Test API', testOk: 'API ok.', testFail: 'API not ok: ', testNeed: 'Enter the address and key.',
+    updateApp: 'Update', updateBusy: 'Looking for the latest GitHub version…',
     backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
     backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
     summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
@@ -211,6 +214,19 @@ async function load() {
   $('llmBackend').value = cfg.llm_backend === 'local' ? 'local' : 'hermes';
   $('summarize').checked = !!cfg.summarize;
   refreshLlm();
+}
+async function updateApp() {
+  $('status').textContent = t('updateBusy');
+  try {
+    const res = await fetch(`${TOOL}/api/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const data = await res.json().catch(() => ({}));
+    const text = data.message || data.error || (t('testFail') + res.status);
+    $('status').textContent = text;
+    alert(text);
+  } catch (e) {
+    $('status').textContent = e.message;
+    alert(e.message);
+  }
 }
 async function testApi() {
   const url = $('hermesUrl').value.trim();

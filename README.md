@@ -4,7 +4,7 @@
 
 ## Deutsch
 
-Schreibt Subgenres und das Jahr in Audio-Dateien. Die Dateien bleiben auf dem PC, der `start_gui.bat` startet. Hermes liefert nur die Einschätzung. Der Key in den Einstellungen ist der Hermes-Key. API testen zeigt das Ergebnis in einer Meldung. Ein abgebrochener Browser-Abruf stoppt den Server nicht.
+Schreibt Subgenres und das Jahr in Audio-Dateien. Die Dateien bleiben auf dem PC, der `start_gui.bat` startet. Hermes liefert nur die Einschätzung. Der Key in den Einstellungen ist der Hermes-Key. Aktualisieren holt die neueste GitHub-Version. config.json und Modelle bleiben.
 
 In jeder Zeile: EffNet, MAEST, Beide, API und Fertig. Fertig nimmt den Track aus der Liste und lädt den nächsten. Fertige ignorieren beim Laden überspringt Dateien mit Genre oder Komponist. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Einstellungen, Hilfe und Versionen öffnen ein eigenes Fenster. Genre, Subgenres und die Instrument-Spalte sind mit dem Stift bearbeitbar.
 
@@ -12,7 +12,7 @@ In jeder Zeile: EffNet, MAEST, Beide, API und Fertig. Fertig nimmt den Track aus
 
 ## English
 
-Writes subgenres and the year into audio files. The files stay on the PC that starts `start_gui.bat`. Hermes only returns the judgement. The key in Settings is the Hermes key. Test API shows the result in a message. A cancelled browser request does not stop the server.
+Writes subgenres and the year into audio files. The files stay on the PC that starts `start_gui.bat`. Hermes only returns the judgement. The key in Settings is the Hermes key. Update downloads the latest GitHub release. config.json and the models stay.
 
 Each row has EffNet, MAEST, Both, API, and Finished. Finished removes that track and loads the next one. Ignore finished when loading skips files that already have a genre or composer. Analyze all and Analyze marked use the listening model from Settings. Settings, Help and Versions open their own window. Genre, subgenres, and the instrument column can be edited with the pencil.
 

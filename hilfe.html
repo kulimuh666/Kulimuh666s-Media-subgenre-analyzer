@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0029</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0030</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -33,7 +33,7 @@
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0029</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0030</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
@@ -48,7 +48,7 @@
   <h2>Workflow</h2>
   <ol>
     <li>Einstellungen, Hilfe und Versionen öffnen ein eigenes Fenster. Die Liste bleibt stehen. Zurück schließt das Fenster. Reicht der Platz nicht, gehen die Knöpfe in der Leiste und in der Zeile auf zwei Zeilen.</li>
-    <li>Der API-Key in den Einstellungen ist der Hermes-Key. API testen schickt eine kurze Anfrage an die eingetragene Adresse und zeigt das Ergebnis in einer Meldung. Der Key wird nicht angezeigt.</li>
+    <li>Aktualisieren in den Einstellungen holt die neueste Version von GitHub und ersetzt nur die Programmdateien. config.json, done.json und die Modelle bleiben. Danach das Server-Fenster schließen und start_gui.bat neu starten. API testen zeigt das Ergebnis der Hermes-Adresse in einer Meldung, ohne den Key.</li>
     <li>Limit setzen, Aktualisieren. Fertige ignorieren beim Laden lässt Dateien weg, deren Genre oder Komponist schon Daten hat, und Tracks, die mit Fertig aus der Liste genommen wurden. Fertig entfernt die Zeile und lädt den nächsten Track. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
     <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
     <li>In den Einstellungen wählst du EffNet, MAEST oder beide. Beide heißt: die Stile werden nach Score zusammengelegt, ohne eine zweite LLM. MagnaTagATune schreibt Gitarre, Rock, Metal, Stimme und Drums ins Mediafile, nach User 1 oder Album Artist. VirtualDJ muss dafür nicht laufen. Genre, Subgenres und diese Spalte haben einen Stift und schreiben direkt in die Datei.</li>
@@ -89,14 +89,14 @@ API_SERVER_PORT=8642</pre>
   <p>Oder <code>start_gui.bat</code> im selben Ordner. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0029</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0030</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>
   <h2>Workflow</h2>
   <ol>
     <li>Settings, Help and Versions open their own window. The list stays. Back closes that window. If the buttons do not fit, the toolbar and the row wrap to two lines.</li>
-    <li>The API key in Settings is the Hermes key. Test API sends a short request to that address and shows the result in a message. The key is not shown.</li>
+    <li>Update in Settings downloads the latest GitHub release and replaces only the program files. config.json, done.json and the models stay. Then close the server window and start start_gui.bat again.</li>
     <li>Set a limit and refresh. Ignore finished when loading skips files whose genre or composer already has data, and tracks marked Finished. Finished removes that row and loads the next track. Load new data fetches the next tracks with empty genre and composer.</li>
     <li>Start keeps genre, composer and year already shown. Web search lets Hermes look the track up. Direct analyses from tags, filename and folder only, without web search, for a small or slow model. The timeout in Settings limits how long a reply may take. 0 waits with no limit.</li>
     <li>▶ plays and turns into ⏸. The pencil next to Genre opens a window with the full genre text and writes it to the file. Genre copies the subgenres into that field.</li>
