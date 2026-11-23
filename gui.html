@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0030</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0031</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -319,7 +319,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0030</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0031</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
@@ -1059,6 +1059,9 @@ async function checkHealth() {
 }
 
 // ── Load config on startup ──
+window.addEventListener('message', (ev) => {
+  if (ev.data === 'vdj-config-saved') loadConfig();
+});
 async function loadConfig() {
   const apiUrl = TOOL_SERVER;
   if (!apiUrl) return;

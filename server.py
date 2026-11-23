@@ -2059,7 +2059,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0030")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0031")
     print("=" * 60)
 
     # Start auto-save timer
