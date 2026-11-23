@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0031</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0032</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -319,7 +319,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0031</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0032</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
@@ -656,10 +656,12 @@ async function startAnalysis(onlyMarked, forceMode) {
   const limit = parseInt($('limit').value) || 0;
   const workers = loadedCfg.workers || 1;
 
+  dedupeRows();
   const rows = [...document.querySelectorAll('#resultsBody tr[data-fp]')];
-  const files = onlyMarked
+  const picked = onlyMarked
     ? rows.filter(tr => tr.querySelector('.row-check')?.checked).map(tr => tr.dataset.fp)
     : rows.map(tr => tr.dataset.fp);
+  const files = [...new Set(picked)];
   if (!files.length) {
     log(t(onlyMarked ? 'noneMarked' : 'emptyResults'), 'warn');
     running = false;
@@ -758,30 +760,40 @@ function rowFinished(genre, subgenres) {
   return !!(String(genre || '').trim() || String(subgenres || '').trim());
 }
 
+function findRow(fp) {
+  const want = String(fp || '');
+  for (const tr of document.querySelectorAll('#resultsBody tr[data-fp]')) {
+    if (tr.dataset.fp === want) return tr;
+  }
+  return null;
+}
+
+function dedupeRows() {
+  const seen = new Set();
+  for (const tr of [...document.querySelectorAll('#resultsBody tr[data-fp]')]) {
+    if (seen.has(tr.dataset.fp)) tr.remove();
+    else seen.add(tr.dataset.fp);
+  }
+  document.querySelectorAll('#resultsBody tr[data-fp]').forEach((tr, i) => { tr.cells[1].textContent = String(i + 1); });
+}
+
 function renderTracks(tracks) {
   tracks.forEach(t => {
     const fp = t.filepath || '';
     if (!fp) return;
     const name = t.filename || fp.split(/[\\/]/).pop();
     const status = t.status === 'analyzing' ? 'running' : (t.status || 'pending');
-    const row = document.querySelector(`tr[data-fp="${cssEscape(fp)}"]`);
+    const row = findRow(fp);
     if ($('hideDone').checked && rowFinished(t.genre, t.subgenres)) {
       if (row) row.remove();
       return;
     }
+    if (!row) return;
     if (status === 'error' && t.error && !seenTracks.has('err:' + fp)) {
       seenTracks.add('err:' + fp);
       log(`${name}: ${t.error}`, 'error');
     }
-    if (row) {
-      updateResultRow(row, status, t.genre || '', t.subgenres || '', t.jahr || '', t.error || '');
-      if (t.artist || t.title) {
-        const cell = row.querySelectorAll('td')[1];
-        cell.outerHTML = fileCell(name, t.artist, t.title);
-      }
-      return;
-    }
-    addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, fp, name, status, t.genre || '', t.subgenres || '', t.jahr || '', t.error || '', t.artist || '', t.title || '', extraField() === 'albumartist' ? (t.albumartist || '') : (t.user1 || ''));
+    updateResultRow(row, status, t.genre || '', t.subgenres || '', t.jahr || '', t.error || '');
   });
 }
 

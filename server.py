@@ -1340,7 +1340,11 @@ def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = 
     total = len(audio_files)
     logger.info(f"Found {total} audio files")
 
-    # Register all tracks in state
+    # Register only this job. A leftover list from the last run must not come back in the status poll.
+    with _state_lock:
+        _state_data["tracks"] = []
+        _state_data["total_files"] = len(audio_files)
+        _state_data["completed"] = 0
     for fp in audio_files:
         add_track(fp)
         tags = read_tags(fp)
@@ -2059,7 +2063,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0031")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0032")
     print("=" * 60)
 
     # Start auto-save timer
