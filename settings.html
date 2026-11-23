@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0025</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0026</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,9 +69,9 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0025</span>
-  <a class="badge" href="gui.html" data-i18n="back">Zurück</a>
-  <a class="badge" href="hilfe.html" data-i18n="help">? Hilfe</a>
+  <span class="badge">V.0026</span>
+  <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
+  <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
     <button type="button" class="lang-btn" data-lang="de" onclick="setLang('de')" aria-label="Deutsch"><svg viewBox="0 0 24 16" width="24" height="16"><rect width="24" height="5.34" fill="#000"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/></svg></button>
     <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English"><svg viewBox="0 0 60 30" width="24" height="16"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg></button>

@@ -1191,6 +1191,27 @@ def file_has_genre(filepath: str) -> bool:
     return bool((tags.get('genre') or '').strip())
 
 
+def file_is_filled(filepath: str) -> bool:
+    tags = read_tags(filepath)
+    return bool((tags.get('genre') or '').strip() or (tags.get('composer') or '').strip())
+
+
+def load_done() -> set:
+    path = PLUGIN_DIR / "done.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    if not isinstance(data, list):
+        return set()
+    return {str(item) for item in data if item}
+
+
+def save_done(paths: set) -> None:
+    path = PLUGIN_DIR / "done.json"
+    path.write_text(json.dumps(sorted(paths), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = None, hide_done: bool = False, files: Optional[List[str]] = None):
     """Run analysis on all tracks in target_dir (called from background thread)."""
     global _state_data
@@ -1212,7 +1233,8 @@ def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = 
         return
 
     if not files and hide_done:
-        audio_files = [fp for fp in audio_files if not file_has_genre(fp)]
+        done = load_done()
+        audio_files = [fp for fp in audio_files if fp not in done and not file_is_filled(fp)]
 
     # Apply limit after finished files are excluded, so the cap is not filled by them.
     if not files and limit and limit > 0:
@@ -1467,6 +1489,7 @@ class VDJHandler(BaseHTTPRequestHandler):
         except ValueError:
             cap = 0
         hide_done = params.get('hide_done', ['0'])[0] in ('1', 'true')
+        done = load_done() if hide_done else set()
 
         after = params.get('after', [''])[0] or ''
         empty_only = params.get('empty_only', ['0'])[0] in ('1', 'true')
@@ -1487,7 +1510,7 @@ class VDJHandler(BaseHTTPRequestHandler):
             genre = (tags.get('genre') or '').strip()
             if genre:
                 complete += 1
-            if hide_done and genre:
+            if hide_done and (fp in done or genre or composer):
                 continue
             if empty_only and (genre or composer):
                 continue
@@ -1624,6 +1647,8 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_apply_genre()
         elif path == '/api/apply-field':
             self._handle_apply_field()
+        elif path == '/api/done':
+            self._handle_done()
         elif path == '/api/reveal':
             self._handle_reveal()
         elif path == '/api/row':
@@ -1776,6 +1801,19 @@ class VDJHandler(BaseHTTPRequestHandler):
         code = 200 if result.get("status") == "success" else 500
         self._send_json(result, code)
 
+    def _handle_done(self):
+        body = self._parse_json_body()
+        if body is None:
+            return
+        fp = body.get("filepath") or ""
+        if not fp:
+            self._send_json({"error": "filepath missing"}, 400)
+            return
+        done = load_done()
+        done.add(fp)
+        save_done(done)
+        self._send_json({"ok": True, "filepath": fp})
+
     def _handle_reveal(self):
         """Open Explorer with this file selected."""
         body = self._parse_json_body()
@@ -1901,7 +1939,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0025")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0026")
     print("=" * 60)
 
     # Start auto-save timer

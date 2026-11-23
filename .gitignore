@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 analyze.log
 state.json
+done.json
 config.json
 release/
 *.zip

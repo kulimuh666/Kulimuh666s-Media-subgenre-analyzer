@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0025</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0026</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -26,14 +26,14 @@
 <body>
 <main>
   <div class="top">
-    <a href="gui.html" data-back>← zurück zur App</a>
+    <a href="gui.html" data-back onclick="if (window.opener) { window.close(); return false; }">← zurück zur App</a>
     <div class="lang-switch">
       <button type="button" class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch" onclick="setLang('de')"><svg viewBox="0 0 24 16" width="24" height="16" aria-hidden="true"><rect width="24" height="5.34" fill="#000"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/></svg></button>
       <button type="button" class="lang-btn" data-lang="en" title="English" aria-label="English" onclick="setLang('en')"><svg viewBox="0 0 60 30" width="24" height="16" aria-hidden="true"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg></button>
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0025</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0026</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
@@ -47,9 +47,9 @@
 
   <h2>Workflow</h2>
   <ol>
-    <li>Auf dem PC mit der Musik <code>start_gui.bat</code> doppelklicken. Das startet den Server auf <code>localhost:8765</code> und öffnet diese Seite.</li>
+    <li>Einstellungen, Hilfe und Versionen öffnen ein eigenes Fenster. Die Liste bleibt stehen. Zurück schließt das Fenster. Reicht der Platz nicht, gehen die Knöpfe in der Leiste und in der Zeile auf zwei Zeilen.</li>
     <li>Hermes API, Key, Worker, Timeout und Analyseart stehen unter Einstellungen. Ziel-Ordner ist ein Pfad auf diesem PC und bleibt auf der Hauptseite.</li>
-    <li>Limit setzen, Aktualisieren. Fertige ausblenden lässt Dateien weg, deren Genre-Tag schon Daten hat. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
+    <li>Limit setzen, Aktualisieren. Fertige ignorieren beim Laden lässt Dateien weg, deren Genre oder Komponist schon Daten hat, und Tracks, die mit Fertig aus der Liste genommen wurden. Fertig entfernt die Zeile und lädt den nächsten Track. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
     <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
     <li>In den Einstellungen wählst du EffNet, MAEST oder beide. Beide heißt: die Stile werden nach Score zusammengelegt, ohne eine zweite LLM. MagnaTagATune schreibt Gitarre, Rock, Metal, Stimme und Drums ins Mediafile, nach User 1 oder Album Artist. VirtualDJ muss dafür nicht laufen. Genre, Subgenres und diese Spalte haben einen Stift und schreiben direkt in die Datei.</li>
     <li>Analyseart Audio hört die ganze Datei, nicht nur drei Ausschnitte, und schreibt die erkannten Discogs-Stile in die Subgenres-Spalte und ins Komponist-Feld. Techno, Hard Techno, Minimal Techno, Schranz, Industrial, Psytrance, Goa Trance, Tech Trance, Progressive Trance und weitere, wenn das Modell sie hört. Das Genre-Feld bleibt unangetastet. Den passenden Text übernimmst du mit dem Genre-Button. Websuche und Direkt bleiben die anderen Analysearten.</li>
@@ -60,7 +60,7 @@
   <p>Unterstützt: mp3, flac, m4a, mp4, aac, ogg, opus. m4a und mp4, auch eine mp4 mit Bildspur, werden als MP4 gelesen und geschrieben. Andere Endungen, oder eine Datei die sich nicht öffnen lässt, erscheinen als Format und werden nicht analysiert.</p>
 
   <h2>Versionen</h2>
-  <p>Die Nummer steht in der Überschrift. Was sich geändert hat, steht auf der <a href="versionen.html">Versionsseite</a>. Neue Funktionen gehören in diese Hilfe, nicht nur in die Versionsliste.</p>
+  <p>Die Nummer steht in der Überschrift. Was sich geändert hat, steht auf der <a href="versionen.html" onclick="return !window.open('versionen.html','analyzer-versions','width=960,height=780,resizable=yes,scrollbars=yes')">Versionsseite</a>. Neue Funktionen gehören in diese Hilfe, nicht nur in die Versionsliste.</p>
 
   <h2>Hermes herunterladen</h2>
   <p>Windows-Paket: <a href="https://hermes-agent.nousresearch.com/">hermes-agent.nousresearch.com</a> — die <code>.appinstaller</code>-Datei mit dem Windows App Installer öffnen.</p>
@@ -89,15 +89,15 @@ API_SERVER_PORT=8642</pre>
   <p>Oder <code>start_gui.bat</code> im selben Ordner. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0025</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0026</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>
   <h2>Workflow</h2>
   <ol>
-    <li>On the music PC, double-click <code>start_gui.bat</code>.</li>
+    <li>Settings, Help and Versions open their own window. The list stays. Back closes that window. If the buttons do not fit, the toolbar and the row wrap to two lines.</li>
     <li>Enter the Hermes API, key, workers, timeout and analysis mode under Settings. The target folder stays on the main page.</li>
-    <li>Set a limit and refresh. Hide finished drops files whose genre tag already has data. Load new data fetches the next tracks with empty genre and composer.</li>
+    <li>Set a limit and refresh. Ignore finished when loading skips files whose genre or composer already has data, and tracks marked Finished. Finished removes that row and loads the next track. Load new data fetches the next tracks with empty genre and composer.</li>
     <li>Start keeps genre, composer and year already shown. Web search lets Hermes look the track up. Direct analyses from tags, filename and folder only, without web search, for a small or slow model. The timeout in Settings limits how long a reply may take. 0 waits with no limit.</li>
     <li>▶ plays and turns into ⏸. The pencil next to Genre opens a window with the full genre text and writes it to the file. Genre copies the subgenres into that field.</li>
   </ol>

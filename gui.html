@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0025</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0026</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -40,6 +40,7 @@ body {
   padding: 12px 24px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
 .header h1 {
@@ -130,6 +131,7 @@ td.file-cell {
 /* ── Buttons ── */
 .btn-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 0 16px 16px;
   align-items: center;
@@ -215,7 +217,19 @@ tbody tr:hover { background: rgba(88,166,255,0.04); }
 .status-error   { background: rgba(248,81,73,0.15); color: var(--accent-red); }
 .row-error { color: var(--accent-red); font-size: 11px; white-space: normal; max-width: 280px; margin-top: 4px; }
 .status-running { background: rgba(88,166,255,0.15); color: var(--accent-blue); animation: pulse 1.5s infinite; }
-.row-actions { white-space: nowrap; }
+tbody td.row-actions {
+  white-space: normal;
+  overflow: visible;
+  max-width: 280px;
+  width: 260px;
+}
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 248px;
+  align-content: flex-start;
+}
 .btn-play, .btn-apply {
   border: 1px solid var(--border-color);
   background: transparent;
@@ -305,12 +319,12 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0025</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0026</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
-  <a class="badge" href="settings.html" data-i18n="settings">Einstellungen</a>
-  <a class="badge" href="hilfe.html" data-i18n="help">? Hilfe</a>
-  <a class="badge" href="versionen.html" data-i18n="versions">Versionen</a>
+  <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
+  <a class="badge" href="hilfe.html" data-i18n="help" onclick="return openPage('hilfe.html','analyzer-help')">? Hilfe</a>
+  <a class="badge" href="versionen.html" data-i18n="versions" onclick="return openPage('versionen.html','analyzer-versions')">Versionen</a>
   <div class="lang-switch">
     <button type="button" class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch" onclick="setLang('de')"><svg viewBox="0 0 24 16" width="24" height="16" aria-hidden="true"><rect width="24" height="5.34" fill="#000"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/></svg></button>
     <button type="button" class="lang-btn" data-lang="en" title="English" aria-label="English" onclick="setLang('en')"><svg viewBox="0 0 60 30" width="24" height="16" aria-hidden="true"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg></button>
@@ -341,7 +355,7 @@ body { padding-bottom: 52px; }
       <button class="btn-stop" id="btnStop" onclick="stopAnalysis()" disabled>⏹ Stop</button>
       <button class="btn-stop" id="btnReload" onclick="loadFiles()" data-i18n="reload">↻ Aktualisieren</button>
       <button class="btn-stop" id="btnNext" onclick="loadFiles('next')" data-i18n="loadNew">Neue Daten laden</button>
-      <label class="filter-done"><input type="checkbox" id="hideDone" onchange="saveSettings(); loadFiles()"> <span data-i18n="hideDone">Fertige ausblenden</span></label>
+      <label class="filter-done"><input type="checkbox" id="hideDone" onchange="saveSettings(); loadFiles()">      <span data-i18n="hideDone">Fertige ignorieren beim Laden</span></label>
       <button class="btn-clear-log" onclick="clearLog()" data-i18n="clearLog">🗑 Log leeren</button>
     </div>
 
@@ -409,7 +423,7 @@ const I18N = {
   de: {
     help: '? Hilfe', versions: 'Versionen', settings: 'Einstellungen', config: '⚙ Lauf', workers: 'Worker-Anzahl',
     workersRecommended: '1 (empfohlen)', targetFolder: 'Ziel-Ordner', targetPlaceholder: 'Ordner auf diesem PC',
-    limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden', hideDone: 'Fertige ausblenden', clearLog: '🗑 Log leeren',
+    limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden',    hideDone: 'Fertige ignorieren beim Laden', doneBtn: 'Fertig', clearLog: '🗑 Log leeren',
     analyzeAll: 'Alle analysieren', analyzeMarked: 'Markierte analysieren', noneMarked: 'Keine Datei markiert.',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Beide',
     results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
@@ -437,7 +451,7 @@ const I18N = {
   en: {
     help: '? Help', versions: 'Versions', settings: 'Settings', config: '⚙ Run', workers: 'Workers',
     workersRecommended: '1 (recommended)', targetFolder: 'Target folder', targetPlaceholder: 'Folder on this PC',
-    limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data', hideDone: 'Hide finished', clearLog: '🗑 Clear log',
+    limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data',    hideDone: 'Ignore finished when loading', doneBtn: 'Finished', clearLog: '🗑 Clear log',
     analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', noneMarked: 'No file marked.',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Both',
     results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
@@ -492,6 +506,11 @@ function applyI18n() {
   });
   const audio = $('player');
   if (audio && audio.dataset.fp && !audio.paused) setPlayMark(audio.dataset.fp, true);
+}
+function openPage(href, name) {
+  const w = window.open(href, name, 'width=960,height=780,resizable=yes,scrollbars=yes');
+  if (w) { w.focus(); return false; }
+  return true;
 }
 function setLang(next) {
   lang = next === 'en' ? 'en' : 'de';
@@ -733,8 +752,8 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function rowFinished(genre) {
-  return !!(String(genre || '').trim());
+function rowFinished(genre, subgenres) {
+  return !!(String(genre || '').trim() || String(subgenres || '').trim());
 }
 
 function renderTracks(tracks) {
@@ -744,7 +763,7 @@ function renderTracks(tracks) {
     const name = t.filename || fp.split(/[\\/]/).pop();
     const status = t.status === 'analyzing' ? 'running' : (t.status || 'pending');
     const row = document.querySelector(`tr[data-fp="${cssEscape(fp)}"]`);
-    if ($('hideDone').checked && rowFinished(t.genre)) {
+    if ($('hideDone').checked && rowFinished(t.genre, t.subgenres)) {
       if (row) row.remove();
       return;
     }
@@ -1012,6 +1031,7 @@ function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, arti
       <button class="btn-play" onclick="rowAnalyze(this, 'api')" data-i18n="apiBtn">API</button>
       <button class="btn-play play-btn" onclick="playTrack(this.closest('tr').dataset.fp)">▶</button>
       <button class="btn-play btn-folder" onclick="revealTrack(this.closest('tr').dataset.fp)">${t('folder')}</button>
+      <button class="btn-play" onclick="markFinished(this)" data-i18n="doneBtn">Fertig</button>
       <button class="btn-apply" onclick="applyGenre(this)" ${subgenres ? '' : 'disabled'}>${t('applyGenre')}</button>
     </td>
   `;
@@ -1058,6 +1078,62 @@ async function loadConfig() {
 
 // ── Dateiliste frisch aus den Mediendateien laden ──
 let emptyCursor = '';
+async function markFinished(btn) {
+  const row = btn.closest('tr');
+  const fp = row.dataset.fp;
+  const name = fp.split(/[\\/]/).pop();
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${TOOL_SERVER}/api/done`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath: fp })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      log(err.error || name, 'error');
+      btn.disabled = false;
+      return;
+    }
+  } catch (e) {
+    log(e.message, 'error');
+    btn.disabled = false;
+    return;
+  }
+  if (row.dataset.fp === $('player').dataset.fp) { $('player').pause(); }
+  row.remove();
+  marked.delete(fp);
+  document.querySelectorAll('#resultsBody tr[data-fp]').forEach((tr, i) => { tr.cells[1].textContent = String(i + 1); });
+  const box = $('hideDone');
+  if (!box.checked) { box.checked = true; saveSettings(); }
+  log(`${t('doneBtn')}: ${name}`, 'info');
+  await loadReplacement();
+}
+
+async function loadReplacement() {
+  const have = new Set([...document.querySelectorAll('#resultsBody tr[data-fp]')].map(r => r.dataset.fp));
+  const dir = $('targetFolder').value.trim();
+  let cap = have.size + 1;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const params = new URLSearchParams();
+    if (dir) params.set('dir', dir);
+    params.set('limit', String(cap));
+    params.set('hide_done', '1');
+    const res = await fetch(`${TOOL_SERVER}/api/files?${params.toString()}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const files = data.files || [];
+    const next = files.find(f => f.filepath && !have.has(f.filepath));
+    if (next) {
+      addResultRow(have.size + 1, next.filepath, next.filename, 'pending', next.genre || '', next.composer || '', next.jahr || '', next.error || '', next.artist || '', next.title || '', extraField() === 'albumartist' ? (next.albumartist || '') : (next.user1 || ''));
+      return;
+    }
+    if (files.length < cap) break;
+    cap += 20;
+  }
+  log(t('noMoreEmpty'), 'warn');
+}
+
 async function loadFiles(mode) {
   const apiUrl = TOOL_SERVER;
   const dir = $('targetFolder').value.trim();
@@ -1089,7 +1165,7 @@ async function loadFiles(mode) {
     seenTracks = new Set();
     (data.files || []).forEach(f => {
       const status = f.status === 'skipped' ? 'skipped' : f.status === 'unsupported' ? 'unsupported' : 'pending';
-      if ($('hideDone').checked && rowFinished(f.genre)) return;
+      if ($('hideDone').checked && rowFinished(f.genre, f.composer)) return;
       addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, f.filepath, f.filename, status, f.genre || '', f.composer || '', f.jahr || '', f.error || '', f.artist || '', f.title || '', extraField() === 'albumartist' ? (f.albumartist || '') : (f.user1 || ''));
     });
     const complete = data.complete || 0;

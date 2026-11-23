@@ -15,9 +15,14 @@
 </head>
 <body>
 <main>
-  <a href="gui.html">← zurück zur App</a>
+  <a href="gui.html" onclick="if (window.opener) { window.close(); return false; }">← zurück zur App</a>
   <h1>Versionen</h1>
   <p>Jede Änderung bekommt eine neue Nummer. Die aktuelle steht in <code>VERSION</code> und in der Überschrift.</p>
+
+  <h2>V.0026</h2>
+  <ul>
+    <li>Einstellungen, Hilfe und Versionen öffnen ein eigenes Fenster. Knöpfe gehen auf zwei Zeilen, wenn der Platz nicht reicht. Fertig nimmt den Track aus der Liste und lädt den nächsten. Fertige ignorieren beim Laden überspringt befüllte Dateien.</li>
+  </ul>
 
   <h2>V.0025</h2>
   <ul>
