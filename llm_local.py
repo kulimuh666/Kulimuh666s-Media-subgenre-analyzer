@@ -70,6 +70,14 @@ CATALOG = {
                 "url": "https://essentia.upf.edu/models/autotagging/mtt/mtt-musicnn-1.json",
                 "name": "mtt-musicnn-1.json",
             },
+            {
+                "url": "https://essentia.upf.edu/models/feature-extractors/maest/discogs-maest-30s-pw-519l-2.onnx",
+                "name": "discogs-maest-30s-pw-519l-2.onnx",
+            },
+            {
+                "url": "https://essentia.upf.edu/models/feature-extractors/maest/discogs-maest-30s-pw-519l-2.json",
+                "name": "discogs-maest-30s-pw-519l-2.json",
+            },
         ],
     },
 }
@@ -144,7 +152,7 @@ def _write_http(url, part: Path, label: str) -> None:
 def _write_curl(url, part: Path) -> None:
     proc = subprocess.run(
         ["curl.exe", "-L", "--fail", "--retry", "2", "-o", str(part), url],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900,
     )
     if proc.returncode != 0 or not part.is_file() or part.stat().st_size <= 0:
         detail = ((proc.stderr or proc.stdout) or "curl.exe fehlgeschlagen").strip()[-300:]

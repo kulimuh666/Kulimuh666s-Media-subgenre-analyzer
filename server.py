@@ -1190,7 +1190,7 @@ def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict
     """Run the selected local audio model. Python 3.15 has no onnxruntime wheel."""
     script = PLUGIN_DIR / "audio_style.py"
     model = model or active_audio_model()
-    if model not in ("effnet", "maest", "both"):
+    if model not in ("effnet", "maest", "both", "mtt"):
         model = "effnet"
     cfg_py = audio_python()
     if not cfg_py:
@@ -1344,8 +1344,14 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
         extra_note = ""
         extra_value = ""
         extra_field = load_config().get("extra_tag") or "off"
-        if success and run_mode == "audio" and result.get("user1") and extra_field != "off":
-            extra_value = result.get("user1") or ""
+        if extra_field != "off" and not (result.get("user1") or "").strip():
+            heard = recognize_audio(filepath, "mtt") or {}
+            if heard.get("user1"):
+                result["user1"] = heard["user1"]
+            elif heard.get("error"):
+                logger.warning(f"User1 audio {Path(filepath).name}: {heard['error']}")
+        extra_value = (result.get("user1") or "").strip()
+        if success and extra_value and extra_field != "off":
             if extra_field == "albumartist":
                 extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
             else:
@@ -2273,7 +2279,7 @@ def prepare_runtime() -> None:
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0038")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0039")
     print("=" * 60)
     prepare_runtime()
 

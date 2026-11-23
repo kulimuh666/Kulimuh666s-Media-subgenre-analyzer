@@ -251,7 +251,7 @@ def mtt_tags(bands):
 
 
 def predict(path, model="effnet"):
-    if model not in ("effnet", "maest", "both"):
+    if model not in ("effnet", "maest", "both", "mtt"):
         model = "effnet"
     needed = []
     if model in ("effnet", "both"):
@@ -260,11 +260,14 @@ def predict(path, model="effnet"):
     if model in ("maest", "both"):
         needed.append(MAEST)
         needed.append(MAEST_LABELS)
-    needed.extend([MTT, MTT_LABELS])
+    if model in ("effnet", "maest", "both", "mtt"):
+        needed.extend([MTT, MTT_LABELS])
     missing = [p.name for p in needed if not p.is_file()]
     if missing:
         raise FileNotFoundError("audio model missing: " + ", ".join(missing))
     bands = mels(load_audio(path))
+    if model == "mtt":
+        return {"subgenres": "", "einordnung": "", "jahr": None, "user1": mtt_tags(bands), "model": "mtt"}
     groups = []
     if model in ("effnet", "both"):
         groups.append(effnet_ranked(bands))
