@@ -1443,7 +1443,10 @@ class VDJHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            return
 
     def _read_body(self) -> bytes:
         length = int(self.headers.get('Content-Length', 0))
@@ -1984,7 +1987,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0028")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0029")
     print("=" * 60)
 
     # Start auto-save timer
