@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0034</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0035</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,7 +69,7 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0034</span>
+  <span class="badge">V.0035</span>
   <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
   <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
@@ -132,7 +132,7 @@ button {
   <div class="field">
     <label for="pythonPath" data-i18n="pythonPath">Python für Audio</label>
     <input id="pythonPath" type="text" placeholder="python.exe">
-    <div class="hint" data-i18n="pythonHint">EffNet und MAEST brauchen ein Python mit onnxruntime. Suchen prüft die installierten Interpreter.</div>
+    <div class="hint" data-i18n="pythonHint">EffNet und MAEST brauchen Python 3.11 bis 3.14. 3.15 hat kein onnxruntime. Fehlt eins, installiert der Server 3.12.</div>
   </div>
   <div class="row">
     <button type="button" onclick="findPython()" data-i18n="findPython">Python suchen</button>
@@ -175,8 +175,9 @@ const I18N = {
     save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
     testApi: 'API testen', testOk: 'API ok.', testFail: 'API nicht ok: ', testNeed: 'Adresse und Key eintragen.',
     updateApp: 'Aktualisieren', updateBusy: 'Suche die neueste GitHub-Version…',
-    pythonPath: 'Python für Audio', pythonHint: 'EffNet und MAEST brauchen ein Python mit onnxruntime. Suchen prüft die installierten Interpreter.',
-    findPython: 'Python suchen', pythonNone: 'Kein python.exe gefunden.', pythonNoOnnx: 'Gefunden, aber ohne onnxruntime:\n',
+    pythonPath: 'Python für Audio',    pythonHint: 'EffNet und MAEST brauchen Python 3.11 bis 3.14. 3.15 hat kein onnxruntime. Fehlt eins, installiert der Server 3.12.',
+    findPython: 'Python suchen', pythonNone: 'Kein Python 3.11–3.14 gefunden. Der nächste Lauf installiert 3.12.',
+    pythonNoOnnx: 'Python 3.15 geht nicht. Gespeichert ist ein passendes, onnxruntime kommt beim Lauf:\n',
     backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
     backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
     summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
@@ -192,8 +193,9 @@ const I18N = {
     save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
     testApi: 'Test API', testOk: 'API ok.', testFail: 'API not ok: ', testNeed: 'Enter the address and key.',
     updateApp: 'Update', updateBusy: 'Looking for the latest GitHub version…',
-    pythonPath: 'Python for audio', pythonHint: 'EffNet and MAEST need a Python with onnxruntime. Search checks the installed interpreters.',
-    findPython: 'Find Python', pythonNone: 'No python.exe found.', pythonNoOnnx: 'Found, but without onnxruntime:\n',
+    pythonPath: 'Python for audio',    pythonHint: 'EffNet and MAEST need Python 3.11 to 3.14. 3.15 has no onnxruntime. If none is installed, the server installs 3.12.',
+    findPython: 'Find Python', pythonNone: 'No Python 3.11–3.14 found. The next run installs 3.12.',
+    pythonNoOnnx: 'Python 3.15 cannot be used. A compatible one is saved; onnxruntime is installed on the next run:\n',
     backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
     backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
     summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
@@ -235,8 +237,9 @@ async function findPython() {
     const data = await res.json();
     const found = data.found || [];
     if (!found.length) { alert(t('pythonNone')); $('status').textContent = t('pythonNone'); return; }
-    const lines = found.map(item => `${item.onnx ? 'onnx' : 'ohne onnx'}  ${item.path}`).join('\n');
-    const best = found.find(item => item.onnx) || found[0];
+    const lines = found.map(item => `${item.usable ? (item.onnx ? 'onnx' : 'geht') : 'geht nicht'}  ${item.path}`).join('\n');
+    const best = found.find(item => item.usable && item.onnx) || found.find(item => item.usable);
+    if (!best) { alert(t('pythonNone') + '\n' + lines); $('status').textContent = t('pythonNone'); return; }
     $('pythonPath').value = best.path;
     await save();
     alert((best.onnx ? t('saved') + '\n' : t('pythonNoOnnx')) + lines);

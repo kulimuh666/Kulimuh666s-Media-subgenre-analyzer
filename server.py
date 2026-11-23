@@ -1009,6 +1009,24 @@ def active_audio_model() -> str:
     return _job_model or load_config().get("audio_model") or "effnet"
 
 
+AUDIO_PY_OK = {(3, 11), (3, 12), (3, 13), (3, 14)}
+_py_install_lock = threading.Lock()
+
+
+def python_version(exe: str) -> tuple[int, int]:
+    try:
+        proc = subprocess.run(
+            [exe, "-c", "import sys; print(sys.version_info[0], sys.version_info[1])"],
+            capture_output=True, text=True, timeout=20,
+        )
+        parts = (proc.stdout or "").split()
+        if proc.returncode == 0 and len(parts) >= 2:
+            return int(parts[0]), int(parts[1])
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        pass
+    return 0, 0
+
+
 def find_pythons() -> List[Dict[str, Any]]:
     seen = set()
     paths: List[str] = []
@@ -1050,36 +1068,100 @@ def find_pythons() -> List[Dict[str, Any]]:
             add(str(exe))
     found = []
     for exe in paths[:12]:
+        major, minor = python_version(exe)
+        usable = (major, minor) in AUDIO_PY_OK
         onnx = False
         detail = ""
-        try:
-            probe = subprocess.run(
-                [exe, "-c", "import onnxruntime; print(onnxruntime.__version__)"],
-                capture_output=True, text=True, timeout=20,
-            )
-            onnx = probe.returncode == 0
-            detail = ((probe.stdout or probe.stderr) or "").strip()[:120]
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            detail = str(exc)[:120]
-        found.append({"path": exe, "onnx": onnx, "detail": detail})
+        if not usable:
+            detail = f"Python {major}.{minor}: kein onnxruntime"
+        else:
+            try:
+                probe = subprocess.run(
+                    [exe, "-c", "import onnxruntime; print(onnxruntime.__version__)"],
+                    capture_output=True, text=True, timeout=20,
+                )
+                onnx = probe.returncode == 0
+                detail = ((probe.stdout or probe.stderr) or "").strip()[:120]
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                detail = str(exc)[:120]
+        found.append({
+            "path": exe,
+            "onnx": onnx,
+            "usable": usable,
+            "version": [major, minor],
+            "detail": detail,
+        })
     return found
+
+
+def remember_python(exe: str) -> None:
+    cfg = load_config()
+    if cfg.get("python_path") == exe:
+        return
+    cfg["python_path"] = exe
+    save_config(cfg)
+
+
+def install_python_312() -> str:
+    with _py_install_lock:
+        found = find_pythons()
+        usable = [item for item in found if item.get("usable")]
+        if usable:
+            usable.sort(key=lambda item: item.get("version") or [0, 0], reverse=True)
+            return usable[0]["path"]
+        logger.info("Installing Python 3.12 because 3.15 has no onnxruntime wheel")
+        env = os.environ.copy()
+        env["PYLAUNCHER_ALLOW_INSTALL"] = "1"
+        try:
+            subprocess.run(["py", "install", "3.12"], capture_output=True, text=True, timeout=300, env=env)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        try:
+            proc = subprocess.run(
+                ["py", "-3.12", "-c", "import sys; print(sys.executable)"],
+                capture_output=True, text=True, timeout=40, env=env,
+            )
+            exe = (proc.stdout or "").strip()
+            if proc.returncode == 0 and Path(exe).is_file() and python_version(exe) in AUDIO_PY_OK:
+                remember_python(exe)
+                return exe
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        try:
+            subprocess.run(
+                ["winget", "install", "-e", "--id", "Python.Python.3.12",
+                 "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"],
+                capture_output=True, text=True, timeout=300,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        local = os.environ.get("LOCALAPPDATA", "")
+        for root in (Path(local) / "Programs" / "Python", Path(local) / "Python"):
+            for exe in root.glob("Python312*/python.exe"):
+                if exe.is_file() and python_version(str(exe)) in AUDIO_PY_OK:
+                    remember_python(str(exe.resolve()))
+                    return str(exe.resolve())
+        return ""
 
 
 def audio_python() -> str:
     cfg_py = (load_config().get("python_path") or "").strip()
-    if cfg_py and Path(cfg_py).is_file():
+    if cfg_py and Path(cfg_py).is_file() and python_version(cfg_py) in AUDIO_PY_OK:
         return cfg_py
-    try:
-        proc = subprocess.run(["py", "-3", "-c", "import sys; print(sys.executable)"], capture_output=True, text=True, timeout=20)
-        exe = (proc.stdout or "").strip()
-        if proc.returncode == 0 and Path(exe).is_file():
-            return exe
-    except (OSError, subprocess.TimeoutExpired):
-        pass
-    return sys.executable
+    found = find_pythons()
+    usable = [item for item in found if item.get("usable")]
+    usable.sort(key=lambda item: (bool(item.get("onnx")), item.get("version") or [0, 0]), reverse=True)
+    if usable:
+        remember_python(usable[0]["path"])
+        return usable[0]["path"]
+    return install_python_312()
 
 
 def ensure_audio_deps(exe: str) -> tuple[bool, str]:
+    if not exe or not Path(exe).is_file():
+        return False, "Kein Python 3.11–3.14 für onnxruntime gefunden"
+    if python_version(exe) not in AUDIO_PY_OK:
+        return False, "Python 3.15 hat kein onnxruntime. Ein 3.12 wird gebraucht."
     check = "import av, numpy, onnxruntime"
     try:
         probe = subprocess.run([exe, "-c", check], capture_output=True, text=True, timeout=30)
@@ -1108,6 +1190,8 @@ def recognize_audio(filepath: str, model: Optional[str] = None) -> Optional[Dict
     if model not in ("effnet", "maest", "both"):
         model = "effnet"
     cfg_py = audio_python()
+    if not cfg_py:
+        return {"error": "Python 3.15 hat kein onnxruntime. Python 3.12 konnte nicht installiert werden."}
     ok, dep_err = ensure_audio_deps(cfg_py)
     if not ok:
         logger.error(f"AUDIO deps {cfg_py}: {dep_err}")
@@ -2163,7 +2247,7 @@ class VDJHandler(BaseHTTPRequestHandler):
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0034")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0035")
     print("=" * 60)
 
     # Start auto-save timer
