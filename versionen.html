@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Versionen — Kulimuh666's Media Subgenre Analyzer</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+  main { max-width: 820px; margin: 0 auto; padding: 28px 20px 64px; }
+  a { color: #58a6ff; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  h2 { font-size: 16px; margin: 28px 0 8px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <a href="gui.html">← zurück zur App</a>
+  <h1>Versionen</h1>
+  <p>Jede Änderung bekommt eine neue Nummer. Die aktuelle steht in <code>VERSION</code> und in der Überschrift.</p>
+
+  <h2>V.0023</h2>
+  <ul>
+    <li>EffNet, MAEST oder beide. Instrumente aus MagnaTagATune ins Mediafile, User 1 oder Album Artist. Genre, Subgenres und die Spalte sind in der Liste bearbeitbar.</li>
+  </ul>
+
+  <h2>V.0022</h2>
+  <ul>
+    <li>Local und API in jeder Zeile. Local startet die LLM, falls sie noch nicht läuft. API wartet, wenn die Worker schon belegt sind.</li>
+  </ul>
+
+  <h2>V.0021</h2>
+  <ul>
+    <li>Local hört die ganze Datei. Drei Ausschnitte haben den Break mitgenommen und den Drop verpasst.</li>
+  </ul>
+
+  <h2>V.0020</h2>
+  <ul>
+    <li>Local und API in der Liste. Local hört die Datei, API ruft Hermes. Markierte Zeilen, sonst alle sichtbaren.</li>
+  </ul>
+
+  <h2>V.0019</h2>
+  <ul>
+    <li>Analyseart Audio hört die Datei und schreibt Discogs-Stile in Subgenres und Komponist. Das Genre-Feld bleibt leer, bis du den Genre-Button drückst.</li>
+  </ul>
+
+  <h2>V.0018</h2>
+  <ul>
+    <li>Checkbox links an jeder Datei. Alle analysieren nimmt die sichtbaren Zeilen, Markierte analysieren nur die angehakten. Kopf-Checkbox markiert alle sichtbaren.</li>
+  </ul>
+
+  <h2>V.0017</h2>
+  <ul>
+    <li>Lokale llama.cpp neben Hermes. Qwen2.5 3B für die direkte Analyse, Qwen2.5 1.5B zum Kürzen. Download und Start in den Einstellungen, Dateien im Ordner models.</li>
+  </ul>
+
+  <h2>V.0016</h2>
+  <ul>
+    <li>Einstellungen liegen auf einer eigenen Seite: Hermes-Adresse, Key, Worker, Timeout und Analyseart.</li>
+    <li>Timeout ist einstellbar. 0 wartet ohne Limit. Standard bleibt 1800 Sekunden.</li>
+    <li>Direkt analysiert den Track nur aus Tags, Dateiname und Ordner, ohne Websuche. Für ein kleines oder langsames Modell.</li>
+  </ul>
+
+  <h2>V.0015</h2>
+  <ul>
+    <li>Start behält die schon geladenen Genre-, Komponist- und Jahr-Tags. Der Status-Poll schreibt sie nicht mehr leer.</li>
+  </ul>
+
+  <h2>V.0014</h2>
+  <ul>
+    <li>Fertige ausblenden gilt nur für Dateien mit Genre-Tag. Neue Daten laden holt die nächsten Tracks mit leerem Genre und Komponist.</li>
+  </ul>
+
+  <h2>V.0013</h2>
+  <ul>
+    <li>Kürzere Stile fallen weg, wenn eine längere Form sie schon enthält. Peak Time Techno/Driving Techno bleibt.</li>
+  </ul>
+
+  <h2>V.0012</h2>
+  <ul>
+    <li>Psytrance ist die Kurzform von Psychedelic Trance. Nur die Kurzform wird geschrieben.</li>
+  </ul>
+
+  <h2>V.0011</h2>
+  <ul>
+    <li>Interpret und Titel stehen sichtbar unter dem Dateinamen. Tags zuerst, sonst Artist - Titel aus dem Dateinamen.</li>
+  </ul>
+
+  <h2>V.0010</h2>
+  <ul>
+    <li>Genre-Stift bleibt bei langem Text sichtbar. Bearbeiten öffnet ein Fenster mit dem ganzen Text.</li>
+  </ul>
+
+  <h2>V.0009</h2>
+  <ul>
+    <li>Fertige ausblenden lädt Dateien mit Komponist und Jahr nicht in die Liste und nicht in den Lauf. Das Limit zählt sie nicht mit.</li>
+  </ul>
+
+  <h2>V.0008</h2>
+  <ul>
+    <li>Stift neben dem Genre ändert das Genre-Feld direkt in der Datei. Leer speichern löscht es.</li>
+  </ul>
+
+  <h2>V.0007</h2>
+  <ul>
+    <li>Sprachwahl über Flaggen, Deutsch als Standard, Englisch dazu. Gilt für App und Hilfe.</li>
+    <li>Unter dem Dateinamen stehen Interpret und Titel aus den Tags.</li>
+  </ul>
+
+  <h2>V.0006</h2>
+  <ul>
+    <li>Die spielende Datei wird in der Zeile markiert. Der Play-Button wird zu Pause, die Leiste zeigt den Dateinamen.</li>
+  </ul>
+
+  <h2>V.0005</h2>
+  <ul>
+    <li>Doppelte Stile werden beim Zusammenfügen entfernt. Bindestrich und Leerzeichen zählen als derselbe Tag.</li>
+  </ul>
+
+  <h2>V.0004</h2>
+  <ul>
+    <li>mp4 und m4a werden mit mutagen.mp4.MP4 geöffnet. Die alte M4A-Klasse ist tot und hat jede Datei vor der Analyse abgelehnt.</li>
+  </ul>
+
+  <h2>V.0003</h2>
+  <ul>
+    <li>Nicht unterstützte oder nicht öffenbare Dateien werden vor der Hermes-Anfrage erkannt und als Format markiert.</li>
+    <li>Hilfe um Formate, Vorprüfung und die Zeilen-Buttons ergänzt.</li>
+  </ul>
+
+  <h2>V.0002</h2>
+  <ul>
+    <li>Diese Versionsseite, verlinkt aus der App.</li>
+    <li>mp4 wird wie m4a gelesen, geschrieben und abgespielt.</li>
+  </ul>
+
+  <h2>V.0001</h2>
+  <ul>
+    <li>Erster gepackter Build.</li>
+    <li>m4a/aac über die MP4-Felder ©wrt, ©gen und ©day.</li>
+    <li>Explorer kommt nach dem Markieren in den Vordergrund.</li>
+    <li>Dateiliste liefert die ersten Tracks, ohne vorher die ganze Bibliothek zu taggen.</li>
+    <li>mutagen wird beim Start geprüft und bei Bedarf installiert.</li>
+    <li>Log, Config und State liegen neben server.py.</li>
+    <li>Ordnerpfad darf zur Track-Suche genutzt werden.</li>
+    <li>Fehlertext steht in der Zeile und im Log.</li>
+  </ul>
+</main>
+</body>
+</html>

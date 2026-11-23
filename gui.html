@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kulimuh666's Media Subgenre Analyzer V.0023</title>
+<style>
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2333;
+  --border-color: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-yellow: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #bc8cff;
+  --btn-start-bg: #238636;
+  --btn-stop-bg: #da3633;
+  --scrollbar-thumb: #30363d;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-blue);
+}
+.lang-switch { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.lang-btn { width: 32px; height: 22px; padding: 1px; border: 2px solid transparent; background: transparent; border-radius: 3px; line-height: 0; }
+.lang-btn.active { border-color: var(--accent-blue); }
+td.file-cell {
+  white-space: normal;
+  overflow: visible;
+  vertical-align: top;
+  max-width: 420px;
+}
+.file-name, .file-tags {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 400px;
+}
+.file-tags { color: var(--text-secondary); font-size: 11px; line-height: 1.3; margin-top: 2px; }
+.header .badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ── Layout ── */
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+/* ── Config Panel ── */
+.panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.field input, .field select {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent-blue);
+}
+
+/* ── Buttons ── */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px;
+  align-items: center;
+}
+button {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 6px;
+  transition: opacity 0.2s, transform 0.1s;
+}
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-start { background: var(--btn-start-bg); color: #fff; }
+.btn-stop { background: var(--btn-stop-bg); color: #fff; }
+.btn-clear-log { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+/* ── Progress ── */
+.progress-section { padding: 0 16px 12px; display: none; }
+.progress-section.visible { display: block; }
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.progress-bar-track {
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* ── Results Table ── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.check-col { width: 32px; text-align: center; padding-left: 8px; padding-right: 4px; }
+thead th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+tbody tr:hover { background: rgba(88,166,255,0.04); }
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-success { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+.status-pending { background: rgba(210,153,34,0.15); color: var(--accent-yellow); }
+.status-error   { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+.row-error { color: var(--accent-red); font-size: 11px; white-space: normal; max-width: 280px; margin-top: 4px; }
+.status-running { background: rgba(88,166,255,0.15); color: var(--accent-blue); animation: pulse 1.5s infinite; }
+.row-actions { white-space: nowrap; }
+.btn-play, .btn-apply {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-right: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.btn-play:hover, .btn-apply:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.btn-apply:disabled { opacity: 0.4; cursor: default; }
+tbody td.genre-cell { overflow: hidden; }
+.genre-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.genre-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-edit-genre { flex: 0 0 auto; }
+.modal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.modal[hidden] { display: none; }
+.modal-card { width: min(640px, 100%); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; }
+.modal-card h2 { font-size: 16px; margin-bottom: 6px; }
+.modal-card p { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal-card textarea { width: 100%; min-height: 160px; margin: 12px 0; resize: vertical; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font: 14px/1.45 inherit; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-play.playing { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(88,166,255,0.18); }
+tr.playing { background: rgba(88,166,255,0.10); }
+tr.playing td:first-child { box-shadow: inset 3px 0 0 var(--accent-blue); }
+#playerBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--bg-secondary, #161b22);
+  border-top: 1px solid var(--border-color);
+}
+#nowPlaying {
+  max-width: 36%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--accent-blue);
+}
+#player { flex: 1; height: 32px; }
+body { padding-bottom: 52px; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Console / Log ── */
+.console-wrap {
+  flex: 1;
+  min-height: 200px;
+  max-height: 35vh;
+  overflow-y: auto;
+  padding: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--bg-primary);
+  border-radius: 0 0 8px 8px;
+}
+.log-entry { white-space: pre-wrap; word-break: break-all; }
+.log-time { color: var(--text-secondary); margin-right: 8px; user-select: none; }
+.log-info    { color: var(--accent-blue); }
+.log-success { color: var(--accent-green); }
+.log-warn    { color: var(--accent-yellow); }
+.log-error   { color: var(--accent-red); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .container { padding: 10px; }
+  .config-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0023</span></h1>
+  <span class="badge">Hermes Bridge</span>
+  <span class="badge" id="connStatus">⚪ disconnected</span>
+  <a class="badge" href="settings.html" data-i18n="settings">Einstellungen</a>
+  <a class="badge" href="hilfe.html" data-i18n="help">? Hilfe</a>
+  <a class="badge" href="versionen.html" data-i18n="versions">Versionen</a>
+  <div class="lang-switch">
+    <button type="button" class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch" onclick="setLang('de')"><svg viewBox="0 0 24 16" width="24" height="16" aria-hidden="true"><rect width="24" height="5.34" fill="#000"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/></svg></button>
+    <button type="button" class="lang-btn" data-lang="en" title="English" aria-label="English" onclick="setLang('en')"><svg viewBox="0 0 60 30" width="24" height="16" aria-hidden="true"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg></button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+
+  <!-- Config Panel -->
+  <div class="panel">
+    <div class="panel-header" data-i18n="config">⚙ Konfiguration</div>
+    <div class="config-grid">
+      <div class="field">
+        <label for="targetFolder" data-i18n="targetFolder">Ziel-Ordner</label>
+        <input id="targetFolder" type="text" data-i18n-placeholder="targetPlaceholder" placeholder="Ordner auf diesem PC" value="">
+      </div>
+      <div class="field">
+        <label for="limit" data-i18n="limit">Limit (max. Tracks)</label>
+        <input id="limit" type="number" min="1" value="20" placeholder="20">
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button class="btn-start" id="btnStart" onclick="startAnalysis(false)" data-i18n="analyzeAll">Alle analysieren</button>
+      <button class="btn-start" id="btnMarked" onclick="startAnalysis(true)" data-i18n="analyzeMarked">Markierte analysieren</button>
+      <button class="btn-stop" id="btnStop" onclick="stopAnalysis()" disabled>⏹ Stop</button>
+      <button class="btn-stop" id="btnReload" onclick="loadFiles()" data-i18n="reload">↻ Aktualisieren</button>
+      <button class="btn-stop" id="btnNext" onclick="loadFiles('next')" data-i18n="loadNew">Neue Daten laden</button>
+      <label class="filter-done"><input type="checkbox" id="hideDone" onchange="saveSettings(); loadFiles()"> <span data-i18n="hideDone">Fertige ausblenden</span></label>
+      <button class="btn-clear-log" onclick="clearLog()" data-i18n="clearLog">🗑 Log leeren</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section" id="progressSection">
+      <div class="progress-info">
+        <span id="progressText">0 / 0 Tracks</span>
+        <span id="etaText">ETA: --:--</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="panel">
+    <div class="panel-header" data-i18n="results">📊 Ergebnisse</div>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th class="check-col"><input type="checkbox" id="checkAll" onclick="toggleAll(this.checked)" aria-label="Alle"></th>
+            <th>#</th>
+            <th data-i18n="file">Datei</th>
+            <th data-i18n="genre">Genre</th>
+            <th data-i18n="subgenres">Subgenres</th>
+            <th id="extraHead" data-i18n="user1">User 1</th>
+            <th data-i18n="year">Jahr</th>
+            <th data-i18n="status">Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr><td colspan="9" id="emptyHint" data-i18n="emptyResults" style="text-align:center;color:var(--text-secondary);padding:24px;">Noch keine Ergebnisse — Starte die Analyse.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Console Log -->
+  <div class="panel" style="flex-shrink:0;">
+    <div class="panel-header" data-i18n="console">📟 Konsole</div>
+    <div class="console-wrap" id="console"></div>
+  </div>
+
+</div>
+
+<div id="genreDialog" class="modal" hidden>
+  <div class="modal-card">
+    <h2 data-i18n="editGenre">Genre ändern</h2>
+    <p id="genreDialogFile"></p>
+    <textarea id="genreDialogInput" spellcheck="false"></textarea>
+    <div class="modal-actions">
+      <button type="button" class="btn-clear-log" onclick="closeGenreDialog()" data-i18n="cancel">Abbrechen</button>
+      <button type="button" class="btn-start" onclick="confirmGenreDialog()" data-i18n="save">OK</button>
+    </div>
+  </div>
+</div>
+<div id="playerBar"><span id="nowPlaying"></span><audio id="player" controls preload="none"></audio></div>
+
+<script>
+const TOOL_SERVER = 'http://localhost:8765';
+const I18N = {
+  de: {
+    help: '? Hilfe', versions: 'Versionen', settings: 'Einstellungen', config: '⚙ Lauf', workers: 'Worker-Anzahl',
+    workersRecommended: '1 (empfohlen)', targetFolder: 'Ziel-Ordner', targetPlaceholder: 'Ordner auf diesem PC',
+    limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden', hideDone: 'Fertige ausblenden', clearLog: '🗑 Log leeren',
+    analyzeAll: 'Alle analysieren', analyzeMarked: 'Markierte analysieren', noneMarked: 'Keine Datei markiert.',
+    localBtn: 'Local', apiBtn: 'API',
+    results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
+    emptyResults: 'Noch keine Ergebnisse — Starte die Analyse.', console: '📟 Konsole',
+    disconnected: '⚪ getrennt', running: '🟢 läuft', idle: '⚪ bereit',
+    folder: 'Ordner', applyGenre: 'Genre',    editGenre: 'Genre ändern', save: 'OK', cancel: 'Abbrechen', playing: 'Spielt:',
+    statusOk: '✓ OK', statusError: '✗ Fehler', statusSkipped: '↷ Übersprungen', statusUnverified: '? Nicht belegt',
+    statusFormat: '✗ Format', statusRunning: '⟳ Läuft...', statusWaiting: '⏳ Wartend',
+    logCleared: 'Konsole geleert.', needKey: 'API-Key fehlt. Bitte in den Einstellungen eintragen.', needKeyErr: 'API-Key fehlt. Bitte in den Einstellungen eintragen.',
+    startAnalysis: 'Starte Subgenre-Analyse...', folderLog: 'Ordner', fromConfig: '(aus Server-Config)', noLimit: 'keins',
+    started: 'Analyse gestartet.', found: 'Gefunden: {n} Tracks.', analyzing: 'Analysiere: {name}',
+    done: 'Fertig: {ok} ok, {err} Fehler, {skip} übersprungen.', aborted: 'Analyse abgebrochen.', errorPrefix: 'Fehler: {msg}',
+    stopped: 'Analyse gestoppt.', playingLog: 'Spiele: {name}', explorer: 'Explorer: {name}',
+    explorerFail: 'Explorer öffnen fehlgeschlagen: {msg}', noSubgenres: 'Keine Subgenres zum Übernehmen.',
+    genreWritten: 'Genre geschrieben: {name} → {genres}', genreFail: 'Genre schreiben fehlgeschlagen: {msg}',
+    genreSaved: 'Genre geändert: {name} → {genre}', genreCleared: 'Genre gelöscht: {name}',
+    mutagenOk: 'mutagen geladen', mutagenMissing: 'mutagen fehlt', mutagenUnknown: 'mutagen-Status unbekannt (alter Server)',
+    serverOk: 'Server erreichbar, {mutagen}.{python}', serverStatus: 'Server antwortet mit {status}.',
+    serverDown: 'Server nicht erreichbar: {msg}', configLoaded: 'Konfiguration vom Server geladen.',
+    loadingList: 'Lade Dateiliste aus {dir}...', fromServerConfig: 'Server-Config',
+    listFail: 'Dateiliste fehlgeschlagen ({status})', listSummary: '{shown} von {count} angezeigt, {complete} fertig (Komponist + Jahr).',
+    listFailLoad: 'Dateiliste nicht geladen: {msg}', noMoreEmpty: 'Keine weiteren Tracks mit leerem Genre und Komponist.', configSaved: 'config.json gespeichert.',
+    configNotSaved: 'config.json nicht geschrieben: {msg}', appLoaded: 'Kulimuh666\'s Media Subgenre Analyzer geladen.'
+  },
+  en: {
+    help: '? Help', versions: 'Versions', settings: 'Settings', config: '⚙ Run', workers: 'Workers',
+    workersRecommended: '1 (recommended)', targetFolder: 'Target folder', targetPlaceholder: 'Folder on this PC',
+    limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data', hideDone: 'Hide finished', clearLog: '🗑 Clear log',
+    analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', noneMarked: 'No file marked.',
+    localBtn: 'Local', apiBtn: 'API',
+    results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
+    emptyResults: 'No results yet — start the analysis.', console: '📟 Console',
+    disconnected: '⚪ disconnected', running: '🟢 running', idle: '⚪ idle',
+    folder: 'Folder', applyGenre: 'Genre',    editGenre: 'Edit genre', save: 'OK', cancel: 'Cancel', playing: 'Playing:',
+    statusOk: '✓ OK', statusError: '✗ Error', statusSkipped: '↷ Skipped', statusUnverified: '? Not evidenced',
+    statusFormat: '✗ Format', statusRunning: '⟳ Running...', statusWaiting: '⏳ Waiting',
+    logCleared: 'Console cleared.', needKey: 'API key missing. Set it in Settings.', needKeyErr: 'API key missing. Set it in Settings.',
+    startAnalysis: 'Starting subgenre analysis...', folderLog: 'Folder', fromConfig: '(from server config)', noLimit: 'none',
+    started: 'Analysis started.', found: 'Found: {n} tracks.', analyzing: 'Analyzing: {name}',
+    done: 'Done: {ok} ok, {err} errors, {skip} skipped.', aborted: 'Analysis aborted.', errorPrefix: 'Error: {msg}',
+    stopped: 'Analysis stopped.', playingLog: 'Playing: {name}', explorer: 'Explorer: {name}',
+    explorerFail: 'Could not open Explorer: {msg}', noSubgenres: 'No subgenres to apply.',
+    genreWritten: 'Genre written: {name} → {genres}', genreFail: 'Could not write genre: {msg}',
+    genreSaved: 'Genre changed: {name} → {genre}', genreCleared: 'Genre cleared: {name}',
+    mutagenOk: 'mutagen loaded', mutagenMissing: 'mutagen missing', mutagenUnknown: 'mutagen status unknown (old server)',
+    serverOk: 'Server reachable, {mutagen}.{python}', serverStatus: 'Server responded with {status}.',
+    serverDown: 'Server not reachable: {msg}', configLoaded: 'Configuration loaded from server.',
+    loadingList: 'Loading file list from {dir}...', fromServerConfig: 'server config',
+    listFail: 'File list failed ({status})', listSummary: '{shown} of {count} shown, {complete} finished (composer + year).',
+    listFailLoad: 'File list not loaded: {msg}', noMoreEmpty: 'No further tracks with empty genre and composer.', configSaved: 'config.json saved.',
+    configNotSaved: 'config.json not written: {msg}', appLoaded: 'Kulimuh666\'s Media Subgenre Analyzer loaded.'
+  }
+};
+let lang = localStorage.getItem('vdj.lang') === 'en' ? 'en' : 'de';
+let connState = 'disconnected';
+function t(key, vars) {
+  let s = (I18N[lang] && I18N[lang][key]) || I18N.de[key] || key;
+  if (vars) Object.keys(vars).forEach(k => { s = s.split('{' + k + '}').join(String(vars[k])); });
+  return s;
+}
+function setConn(state) {
+  connState = state;
+  const el = $('connStatus');
+  if (el) el.textContent = t(state);
+}
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+  setConn(connState);
+  document.querySelectorAll('#resultsBody tr[data-fp]').forEach(row => {
+    const badge = statusBadge(row.dataset.status || 'pending');
+    const span = row.querySelector('.status-badge');
+    if (span) { span.className = 'status-badge ' + badge.cls; span.textContent = badge.label; }
+    const folder = row.querySelector('.btn-folder');
+    if (folder) folder.textContent = t('folder');
+    const apply = row.querySelector('.btn-apply');
+    if (apply) apply.textContent = t('applyGenre');
+  });
+  const audio = $('player');
+  if (audio && audio.dataset.fp && !audio.paused) setPlayMark(audio.dataset.fp, true);
+}
+function setLang(next) {
+  lang = next === 'en' ? 'en' : 'de';
+  localStorage.setItem('vdj.lang', lang);
+  applyI18n();
+}
+// ── State ──
+let loadedCfg = {};
+let running = false;
+let abortController = null;
+let results = [];
+let totalFiles = 0;
+let completedFiles = 0;
+let startTime = null;
+
+const $ = id => document.getElementById(id);
+
+// ── Logging ──
+function log(msg, level = 'info') {
+  const consoleEl = $('console');
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${level}`;
+  const now = new Date().toLocaleTimeString(lang === 'en' ? 'en-GB' : 'de-DE');
+  entry.innerHTML = `<span class="log-time">[${now}]</span>${escapeHtml(msg)}`;
+  consoleEl.appendChild(entry);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearLog() {
+  $('console').innerHTML = '';
+  log(t('logCleared'), 'info');
+}
+
+// ── Progress helpers ──
+function updateProgress(done, total) {
+  if (total === 0) return;
+  const pct = Math.round((done / total) * 100);
+  $('progressFill').style.width = pct + '%';
+  $('progressText').textContent = `${done} / ${total} Tracks (${pct}%)`;
+
+  // ETA calculation
+  if (startTime && done > 0) {
+    const elapsed = Date.now() - startTime;
+    const avgMs = elapsed / done;
+    const remaining = (total - done) * avgMs;
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.round((remaining % 60000) / 1000);
+    $('etaText').textContent = `ETA: ${mins}m ${secs}s`;
+  }
+}
+
+// ── API helpers ──
+async function apiFetch(endpoint, body, signal) {
+  const apiUrl = TOOL_SERVER;
+  const apiKey = (loadedCfg.api_key || '').trim() || (loadedCfg.llm_backend === 'local' || loadedCfg.analyze_mode === 'audio' ? 'local' : '');
+  if (!apiUrl || !apiKey) throw new Error(t('needKeyErr'));
+
+  return fetch(`${apiUrl}${endpoint}`, {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(body)
+  });
+}
+
+async function rowAnalyze(btn, mode) {
+  const row = btn.closest('tr');
+  const fp = row.dataset.fp;
+  const name = fp.split(/[\\/]/).pop();
+  if (mode === 'api' && !(loadedCfg.api_key || '').trim()) { log(t('needKey'), 'error'); return; }
+  log(mode === 'local' ? `Local: ${name}` : `API: ${name}`, 'info');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${TOOL_SERVER}/api/row`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath: fp, mode })
+    });
+    const data = await res.json();
+    if (res.status === 409 && data.busy) {
+      alert(`Aktuell laufen Worker für ${(data.running || []).join(', ')} bitte warten`);
+      return;
+    }
+    if (!res.ok) throw new Error(data.reason || data.error || res.status);
+    if (data.subgenres) {
+      row.dataset.subgenres = data.subgenres;
+      const cells = row.querySelectorAll('td');
+      if (cells[4]) cells[4].innerHTML = tagCellHtml(data.subgenres, 'composer');
+      if (data.extra && cells[5]) cells[5].innerHTML = tagCellHtml(data.extra, data.extra_field || extraField());
+      const badge = row.querySelector('.status-badge');
+      if (badge) { badge.className = 'status-badge status-success'; badge.textContent = t('statusOk'); }
+      const applyBtn = row.querySelector('.btn-apply');
+      if (applyBtn) applyBtn.disabled = false;
+    }
+    log(`${mode}: ${name} → ${data.subgenres || data.status}`, data.status === 'success' ? 'success' : 'warn');
+  } catch (e) {
+    log(t('errorPrefix', {msg: e.message}), 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function startForced(mode) {
+  const marked = document.querySelector('#resultsBody .row-check:checked');
+  startAnalysis(!!marked, mode);
+}
+
+// ── Start / Stop ──
+async function startAnalysis(onlyMarked, forceMode) {
+  const runMode = forceMode || loadedCfg.analyze_mode || 'web';
+  const apiUrl = TOOL_SERVER;
+  const apiKey = (loadedCfg.api_key || '').trim() || (runMode === 'audio' ? 'local' : '');
+  if (!apiKey) { log(t('needKey'), 'error'); return; }
+  saveSettings();
+
+  running = true;
+  abortController = new AbortController();
+  results = [];
+  completedFiles = 0;
+  startTime = Date.now();
+  totalFiles = 0;
+  seenTracks = new Set();
+
+  $('btnStart').disabled = true;
+  $('btnMarked').disabled = true;
+  $('btnStop').disabled = false;
+  $('progressSection').classList.add('visible');
+  setConn('running');
+  if (!document.querySelector('#resultsBody tr[data-fp]')) await loadFiles();
+
+  const targetDir = $('targetFolder').value.trim();
+  const limit = parseInt($('limit').value) || 0;
+  const workers = loadedCfg.workers || 1;
+
+  const rows = [...document.querySelectorAll('#resultsBody tr[data-fp]')];
+  const files = onlyMarked
+    ? rows.filter(tr => tr.querySelector('.row-check')?.checked).map(tr => tr.dataset.fp)
+    : rows.map(tr => tr.dataset.fp);
+  if (!files.length) {
+    log(t(onlyMarked ? 'noneMarked' : 'emptyResults'), 'warn');
+    running = false;
+    $('btnStart').disabled = false;
+    $('btnMarked').disabled = false;
+    $('btnStop').disabled = true;
+    setConn('idle');
+    return;
+  }
+
+  log('─────────────────────────────────────', 'info');
+  log(t('startAnalysis'), 'success');
+  log(`Tool-Server: ${apiUrl}`, 'info');
+  log(`Hermes: ${loadedCfg.hermes_url || ''} | ${runMode} | timeout ${loadedCfg.timeout || 1800}s`, 'info');
+  log(`${t('folderLog')}: ${targetDir || t('fromConfig')}`, 'info');
+  log(`Worker: ${workers} | Limit: ${limit || t('noLimit')}`, 'info');
+
+  try {
+    // Config auf dem lokalen Tool-Server speichern, inkl. Hermes-Adresse
+    await apiFetch('/api/config', {
+      ...(targetDir ? { target_dir: targetDir } : {}),
+      ...(limit ? { limit: limit } : { limit: null })
+    }, abortController.signal);
+
+    const startRes = await apiFetch('/api/analyze', {
+      dir: targetDir,
+      limit: limit || null,
+      hide_done: $('hideDone').checked,
+      files: files,
+      mode: runMode,
+      resume: true
+    }, abortController.signal);
+
+    if (!startRes.ok) {
+      const errText = await startRes.text();
+      let msg = errText;
+      try { msg = JSON.parse(errText).error || errText; } catch (e) {}
+      throw new Error(`Start fehlgeschlagen (${startRes.status}): ${msg}`);
+    }
+
+    const startData = await startRes.json();
+    log(startData.message || t('started'), 'success');
+
+    // Fortschritt pollen, bis der Server fertig ist
+    while (running) {
+      await sleep(2000);
+      if (!running) break;
+
+      const statusRes = await fetch(`${apiUrl}/api/status`, { signal: abortController.signal });
+      if (!statusRes.ok) continue;
+      const status = await statusRes.json();
+      const st = status.state || {};
+      const done = (st.success || 0) + (st.error || 0) + (st.skipped || 0) + (st.keygen_skipped || 0);
+      const total = st.total_files || 0;
+
+      if (total && !totalFiles) {
+        totalFiles = total;
+        log(t('found', {n: total}), 'success');
+      }
+      updateProgress(done, total || totalFiles || 1);
+
+      renderTracks(status.tracks || []);
+
+      const current = (status.tracks || []).filter(track => track.status === 'analyzing');
+      current.forEach(track => {
+        if (!seenTracks.has('analyzing:' + track.filepath)) {
+          seenTracks.add('analyzing:' + track.filepath);
+          log(t('analyzing', {name: track.filename}), 'info');
+          const row = document.querySelector(`tr[data-fp="${cssEscape(track.filepath)}"]`);
+          if (row) row.parentNode.prepend(row);
+        }
+      });
+
+      if (!status.is_analyzing && total > 0 && (st.pending || 0) === 0 && (st.analyzing || 0) === 0) {
+        log(t('done', {ok: st.success || 0, err: st.error || 0, skip: st.skipped || 0}), 'success');
+        break;
+      }
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      log(t('aborted'), 'warn');
+    } else {
+      log(t('errorPrefix', {msg: err.message}), 'error');
+    }
+  } finally {
+    stopAnalysis();
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function rowFinished(genre) {
+  return !!(String(genre || '').trim());
+}
+
+function renderTracks(tracks) {
+  tracks.forEach(t => {
+    const fp = t.filepath || '';
+    if (!fp) return;
+    const name = t.filename || fp.split(/[\\/]/).pop();
+    const status = t.status === 'analyzing' ? 'running' : (t.status || 'pending');
+    const row = document.querySelector(`tr[data-fp="${cssEscape(fp)}"]`);
+    if ($('hideDone').checked && rowFinished(t.genre)) {
+      if (row) row.remove();
+      return;
+    }
+    if (status === 'error' && t.error && !seenTracks.has('err:' + fp)) {
+      seenTracks.add('err:' + fp);
+      log(`${name}: ${t.error}`, 'error');
+    }
+    if (row) {
+      updateResultRow(row, status, t.genre || '', t.subgenres || '', t.jahr || '', t.error || '');
+      if (t.artist || t.title) {
+        const cell = row.querySelectorAll('td')[1];
+        cell.outerHTML = fileCell(name, t.artist, t.title);
+      }
+      return;
+    }
+    addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, fp, name, status, t.genre || '', t.subgenres || '', t.jahr || '', t.error || '', t.artist || '', t.title || '', extraField() === 'albumartist' ? (t.albumartist || '') : (t.user1 || ''));
+  });
+}
+
+function cssEscape(value) {
+  return window.CSS && CSS.escape ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&');
+}
+
+function cellText(cell) {
+  const text = (cell?.textContent || '').replace('✎', '').trim();
+  return text === '—' ? '' : text;
+}
+
+function updateResultRow(row, status, genre, subgenres, jahr, error) {
+  const cells = row.querySelectorAll('td');
+  const badge = statusBadge(status);
+  const keepGenre = genre || cellText(cells[3]);
+  const keepSub = subgenres || cellText(cells[4]);
+  const keepYear = (jahr && String(jahr) !== '0') ? jahr : (cellText(cells[6]) || '');
+  cells[3].classList.add('genre-cell');
+  cells[3].innerHTML = tagCellHtml(keepGenre, 'genre');
+  cells[4].classList.add('genre-cell');
+  cells[4].innerHTML = tagCellHtml(keepSub, 'composer');
+  cells[6].innerHTML = keepYear ? escapeHtml(String(keepYear)) : dash();
+  cells[7].innerHTML = `<span class="status-badge ${badge.cls}" title="${escapeHtml(error || '')}">${badge.label}</span>${error ? `<div class="row-error">${escapeHtml(error)}</div>` : ''}`;
+  row.dataset.status = status;
+  row.dataset.subgenres = subgenres;
+  const applyBtn = row.querySelector('.btn-apply');
+  if (applyBtn) applyBtn.disabled = !subgenres;
+}
+
+function stopAnalysis() {
+  running = false;
+  if (abortController) abortController.abort();
+  const apiUrl = TOOL_SERVER;
+  if (apiUrl) fetch(`${apiUrl}/api/stop`, { method: 'POST' }).catch(() => {});
+  $('btnStart').disabled = false;
+  $('btnMarked').disabled = false;
+  $('btnStop').disabled = true;
+  setConn('idle');
+  log(t('stopped'), 'warn');
+}
+
+// ── Table helpers ──
+function statusBadge(status) {
+  const map = {
+    success: ['status-success', t('statusOk')],
+    error: ['status-error', t('statusError')],
+    skipped: ['status-success', t('statusSkipped')],
+    unverified: ['status-pending', t('statusUnverified')],
+    unsupported: ['status-error', t('statusFormat')],
+    running: ['status-running', t('statusRunning')],
+  };
+  const [cls, label] = map[status] || ['status-pending', t('statusWaiting')];
+  return { cls, label };
+}
+
+function tagLine(artist, title, filename) {
+  const a = (artist || '').trim();
+  const ti = (title || '').trim();
+  if (a || ti) return [a, ti].filter(Boolean).join(' - ');
+  const base = String(filename || '').replace(/\.[^.]+$/, '');
+  const parts = base.split(' - ');
+  if (parts.length >= 2 && parts[0].trim() && parts.slice(1).join(' - ').trim()) {
+    return parts[0].trim() + ' - ' + parts.slice(1).join(' - ').trim();
+  }
+  return '';
+}
+
+function fileCell(name, artist, title) {
+  const line = tagLine(artist, title, name);
+  const tip = line ? name + '\n' + line : name;
+  return `<td class="file-cell" title="${escapeHtml(tip)}"><div class="file-name">${escapeHtml(name)}</div>${line ? `<div class="file-tags">${escapeHtml(line)}</div>` : ''}</td>`;
+}
+
+function dash() {
+  return '<span style="color:var(--text-secondary)">—</span>';
+}
+
+function setPlayMark(fp, on) {
+  document.querySelectorAll('.play-btn.playing, tr.playing').forEach(el => {
+    el.classList.remove('playing');
+    if (el.classList.contains('play-btn')) el.textContent = '▶';
+  });
+  const label = $('nowPlaying');
+  if (!on || !fp) {
+    if (label) label.textContent = '';
+    return;
+  }
+  const row = document.querySelector(`tr[data-fp="${cssEscape(fp)}"]`);
+  if (row) {
+    row.classList.add('playing');
+    const btn = row.querySelector('.play-btn');
+    if (btn) {
+      btn.classList.add('playing');
+      btn.textContent = '⏸';
+    }
+  }
+  if (label) label.textContent = t('playing') + ' ' + fp.split(/[\\/]/).pop();
+}
+
+function playTrack(fp) {
+  const audio = $('player');
+  if (audio.dataset.fp === fp && !audio.paused) {
+    audio.pause();
+    return;
+  }
+  audio.dataset.fp = fp;
+  const src = `${TOOL_SERVER}/api/audio?path=${encodeURIComponent(fp)}`;
+  if (audio.src !== src) audio.src = src;
+  audio.play();
+  log(t('playingLog', {name: fp.split(/[\\/]/).pop()}), 'info');
+}
+
+async function revealTrack(fp) {
+  try {
+    const res = await fetch(`${TOOL_SERVER}/api/reveal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath: fp })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    log(t('explorer', {name: fp.split(/[\\/]/).pop()}), 'info');
+  } catch (e) {
+    log(t('explorerFail', {msg: e.message}), 'error');
+  }
+}
+
+function extraField() {
+  return loadedCfg.extra_tag === 'albumartist' ? 'albumartist' : 'user1';
+}
+function extraLabel() {
+  return extraField() === 'albumartist' ? t('albumArtist') : t('user1');
+}
+function tagCellHtml(value, field) {
+  const text = value ? escapeHtml(value) : dash();
+  return `<div class="genre-line"><span class="genre-text">${text}</span><button type="button" class="btn-play btn-edit-genre" data-field="${field}" onclick="editField(this)" title="${escapeHtml(t('editGenre'))}">✎</button></div>`;
+}
+let editRow = null;
+let editCell = null;
+function editField(btn) {
+  editRow = btn.closest('tr');
+  editCell = btn.closest('td');
+  const current = (editCell.querySelector('.genre-text')?.textContent || '').trim();
+  $('genreDialogFile').textContent = editRow.dataset.fp.split(/[\\/]/).pop();
+  $('genreDialogInput').value = current === '—' ? '' : current;
+  $('genreDialogInput').dataset.field = btn.dataset.field || 'genre';
+  $('genreDialog').hidden = false;
+  $('genreDialogInput').focus();
+}
+function editGenre(btn) { editField(btn); }
+function closeGenreDialog() {
+  $('genreDialog').hidden = true;
+  editRow = null;
+  editCell = null;
+}
+async function confirmGenreDialog() {
+  const row = editRow;
+  const cell = editCell;
+  const field = $('genreDialogInput').dataset.field || 'genre';
+  if (!row || !cell) return;
+  const value = $('genreDialogInput').value.trim();
+  try {
+    const res = await fetch(`${TOOL_SERVER}/api/apply-field`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath: row.dataset.fp, field, value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    cell.classList.add('genre-cell');
+    cell.innerHTML = tagCellHtml(value, field);
+    if (field === 'composer') {
+      row.dataset.subgenres = value;
+      const applyBtn = row.querySelector('.btn-apply');
+      if (applyBtn) applyBtn.disabled = !value;
+    }
+    if (field === 'user1' || field === 'albumartist') row.dataset.extra = value;
+    log(t('genreSaved', {name: row.dataset.fp.split(/[\\/]/).pop(), genre: value || '—'}), 'success');
+    closeGenreDialog();
+  } catch (e) {
+    log(t('genreFail', {msg: e.message}), 'error');
+  }
+}
+
+async function applyGenre(btn) {
+  const row = btn.closest('tr');
+  const fp = row.dataset.fp;
+  const subgenres = row.dataset.subgenres || '';
+  if (!subgenres) { log(t('noSubgenres'), 'warn'); return; }
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${TOOL_SERVER}/api/apply-genre`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath: fp, genre: subgenres })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    row.querySelectorAll('td')[3].innerHTML = tagCellHtml(subgenres, 'genre');
+    log(t('genreWritten', {name: fp.split(/[\\/]/).pop(), genres: subgenres}), 'success');
+  } catch (e) {
+    log(t('genreFail', {msg: e.message}), 'error');
+    btn.disabled = false;
+  }
+}
+
+let marked = new Set();
+
+function rememberMark(box) {
+  const fp = box.closest('tr').dataset.fp;
+  if (box.checked) marked.add(fp);
+  else marked.delete(fp);
+  const boxes = [...document.querySelectorAll('#resultsBody .row-check')];
+  const all = $('checkAll');
+  if (all) all.checked = boxes.length > 0 && boxes.every(b => b.checked);
+}
+
+function toggleAll(on) {
+  document.querySelectorAll('#resultsBody .row-check').forEach(box => {
+    box.checked = on;
+    rememberMark(box);
+  });
+}
+
+function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, artist, title, extra) {
+  const tbody = $('resultsBody');
+  if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+
+  const badge = statusBadge(status);
+  const tr = document.createElement('tr');
+  tr.dataset.fp = fp;
+  tr.dataset.status = status;
+  tr.dataset.subgenres = subgenres;
+  tr.dataset.extra = extra || '';
+  tr.innerHTML = `
+    <td class="check-col"><input type="checkbox" class="row-check" ${marked.has(fp) ? 'checked' : ''} onchange="rememberMark(this)"></td>
+    <td>${num}</td>
+    ${fileCell(name, artist, title)}
+    <td class="genre-cell">${tagCellHtml(genre, 'genre')}</td>
+    <td class="genre-cell">${tagCellHtml(subgenres, 'composer')}</td>
+    <td class="genre-cell">${tagCellHtml(extra || '', extraField())}</td>
+    <td>${jahr ? escapeHtml(String(jahr)) : dash()}</td>
+    <td><span class="status-badge ${badge.cls}" title="${escapeHtml(error || '')}">${badge.label}</span>${error ? `<div class="row-error">${escapeHtml(error)}</div>` : ''}</td>
+    <td class="row-actions">
+      <button class="btn-play" onclick="rowAnalyze(this, 'local')" data-i18n="localBtn">Local</button>
+      <button class="btn-play" onclick="rowAnalyze(this, 'api')" data-i18n="apiBtn">API</button>
+      <button class="btn-play play-btn" onclick="playTrack(this.closest('tr').dataset.fp)">▶</button>
+      <button class="btn-play btn-folder" onclick="revealTrack(this.closest('tr').dataset.fp)">${t('folder')}</button>
+      <button class="btn-apply" onclick="applyGenre(this)" ${subgenres ? '' : 'disabled'}>${t('applyGenre')}</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ── Health check on load ──
+async function checkHealth() {
+  const apiUrl = TOOL_SERVER;
+  if (!apiUrl) return;
+  try {
+    const res = await fetch(`${apiUrl}/api/status`, { method: 'GET' });
+    if (res.ok) {
+      const data = await res.json();
+      const mutagen = data.mutagen === true ? t('mutagenOk') : data.mutagen === false ? t('mutagenMissing') : t('mutagenUnknown');
+      log(t('serverOk', {mutagen: mutagen, python: data.python ? ' Python: ' + data.python : ''}), data.mutagen === false ? 'error' : 'success');
+    } else {
+      log(t('serverStatus', {status: res.status}), 'warn');
+    }
+  } catch (e) {
+    log(t('serverDown', {msg: e.message}), 'error');
+  }
+}
+
+// ── Load config on startup ──
+async function loadConfig() {
+  const apiUrl = TOOL_SERVER;
+  if (!apiUrl) return;
+  try {
+    const res = await fetch(`${apiUrl}/api/config`, { method: 'GET' });
+    if (res.ok) {
+      const cfg = await res.json();
+      loadedCfg = cfg;
+      const head = $('extraHead');
+      if (head) head.textContent = extraLabel();
+      if (cfg.target_dir) $('targetFolder').value = cfg.target_dir;
+      if (cfg.limit != null) $('limit').value = String(cfg.limit);
+      log(t('configLoaded'), 'success');
+    }
+  } catch (e) {
+    // Config not loaded yet - use defaults
+  }
+}
+
+// ── Dateiliste frisch aus den Mediendateien laden ──
+let emptyCursor = '';
+async function loadFiles(mode) {
+  const apiUrl = TOOL_SERVER;
+  const dir = $('targetFolder').value.trim();
+  if (!apiUrl) return;
+  const next = mode === 'next';
+  try {
+    log(next ? t('loadNew') : t('loadingList', {dir: dir || t('fromServerConfig')}), 'info');
+    const limit = parseInt($('limit').value) || 0;
+    const hideDone = $('hideDone').checked ? '1' : '0';
+    const params = new URLSearchParams();
+    if (dir) params.set('dir', dir);
+    if (limit) params.set('limit', String(limit));
+    params.set('hide_done', hideDone);
+    if (next) {
+      params.set('empty_only', '1');
+      if (emptyCursor) params.set('after', emptyCursor);
+    } else {
+      emptyCursor = '';
+    }
+    const url = `${apiUrl}/api/files?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      log(err.error || t('listFail', {status: res.status}), 'error');
+      return;
+    }
+    const data = await res.json();
+    $('resultsBody').innerHTML = '';
+    seenTracks = new Set();
+    (data.files || []).forEach(f => {
+      const status = f.status === 'skipped' ? 'skipped' : f.status === 'unsupported' ? 'unsupported' : 'pending';
+      if ($('hideDone').checked && rowFinished(f.genre)) return;
+      addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, f.filepath, f.filename, status, f.genre || '', f.composer || '', f.jahr || '', f.error || '', f.artist || '', f.title || '', extraField() === 'albumartist' ? (f.albumartist || '') : (f.user1 || ''));
+    });
+    const complete = data.complete || 0;
+    log(t('listSummary', {shown: data.shown || 0, count: data.count || 0, complete: complete}), 'info');
+    const rows = document.querySelectorAll('#resultsBody tr[data-fp]');
+    if (next) emptyCursor = rows.length ? rows[rows.length - 1].dataset.fp : emptyCursor;
+    if (next && !rows.length) log(t('noMoreEmpty'), 'warn');
+    const audio = $('player');
+    if (audio.dataset.fp && !audio.paused) setPlayMark(audio.dataset.fp, true);
+  } catch (e) {
+    log(t('listFailLoad', {msg: e.message}), 'warn');
+  }
+}
+
+// ── Einstellungen im Browser merken ──
+async function saveSettings() {
+  localStorage.setItem('vdj.targetFolder', $('targetFolder').value.trim());
+  localStorage.setItem('vdj.hideDone', $('hideDone').checked ? '1' : '0');
+
+  const apiUrl = TOOL_SERVER;
+  if (!apiUrl) return;
+  try {
+    const res = await fetch(`${apiUrl}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target_dir: $('targetFolder').value.trim(),
+        limit: parseInt($('limit').value) || null
+      })
+    });
+    if (res.ok) log(t('configSaved'), 'info');
+  } catch (e) {
+    log(t('configNotSaved', {msg: e.message}), 'warn');
+  }
+}
+
+function restoreSettings() {
+  const folder = localStorage.getItem('vdj.targetFolder');
+  if (folder) $('targetFolder').value = folder;
+  $('hideDone').checked = localStorage.getItem('vdj.hideDone') === '1';
+}
+
+// Init
+log(t('appLoaded'), 'info');
+restoreSettings();
+applyI18n();
+$('targetFolder').addEventListener('change', saveSettings);
+$('limit').addEventListener('change', saveSettings);
+loadConfig().then(loadFiles);
+checkHealth();
+const player = $('player');
+player.addEventListener('play', () => setPlayMark(player.dataset.fp, true));
+player.addEventListener('pause', () => setPlayMark(player.dataset.fp, false));
+player.addEventListener('ended', () => setPlayMark(player.dataset.fp, false));
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && !$('genreDialog').hidden) closeGenreDialog();
+});
+</script>
+</body>
+</html>

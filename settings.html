@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0023</title>
+<style>
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --border-color: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 24px;
+}
+h1 { font-size: 16px; font-weight: 600; }
+a.badge, .badge {
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  text-decoration: none;
+}
+.wrap { max-width: 720px; padding: 24px; }
+.field { margin-bottom: 16px; }
+label { display: block; color: var(--text-secondary); font-size: 13px; margin-bottom: 6px; }
+input, select {
+  width: 100%;
+  background: #0d1117;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.hint { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
+.row { display: flex; gap: 10px; align-items: center; }
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+#status { color: var(--accent-green); font-size: 13px; }
+.lang-switch { margin-left: auto; display: flex; gap: 6px; }
+.lang-btn { background: transparent; border: 1px solid var(--border-color); padding: 2px; border-radius: 4px; }
+.lang-btn.active { border-color: var(--accent-blue); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 data-i18n="title">Einstellungen</h1>
+  <span class="badge">V.0023</span>
+  <a class="badge" href="gui.html" data-i18n="back">Zurück</a>
+  <a class="badge" href="hilfe.html" data-i18n="help">? Hilfe</a>
+  <div class="lang-switch">
+    <button type="button" class="lang-btn" data-lang="de" onclick="setLang('de')" aria-label="Deutsch"><svg viewBox="0 0 24 16" width="24" height="16"><rect width="24" height="5.34" fill="#000"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/></svg></button>
+    <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English"><svg viewBox="0 0 60 30" width="24" height="16"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/></svg></button>
+  </div>
+</div>
+<div class="wrap">
+  <div class="field">
+    <label for="hermesUrl">Hermes API</label>
+    <input id="hermesUrl" type="text" value="http://192.168.1.109:8642/v1/chat/completions">
+  </div>
+  <div class="field">
+    <label for="apiKey">Hermes API Key</label>
+    <input id="apiKey" type="password" placeholder="Bearer Token">
+  </div>
+  <div class="field">
+    <label for="workers" data-i18n="workers">Worker</label>
+    <select id="workers">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="5">5</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="timeout" data-i18n="timeout">Timeout (Sekunden)</label>
+    <input id="timeout" type="number" min="0" value="1800">
+    <div class="hint" data-i18n="timeoutHint">Wie lange eine Hermes-Antwort warten darf. 0 = kein Limit. Standard 1800 (30 Minuten).</div>
+  </div>
+  <div class="field">
+    <label for="analyzeMode" data-i18n="mode">Analyse</label>
+    <select id="analyzeMode">
+      <option value="web" data-i18n="modeWeb">Websuche (Hermes sucht den Track)</option>
+      <option value="direct" data-i18n="modeDirect">Direkt (kleines LLM, nur Tags und Dateiname)</option>
+      <option value="audio" data-i18n="modeAudio">Audio (hört die Datei)</option>
+    </select>
+    <div class="hint" data-i18n="modeHint">Direkt schickt keine Websuche und erwartet eine kurze JSON-Antwort. Für langsame oder kleine Modelle.</div>
+  </div>
+  <div class="field">
+    <label for="audioModel" data-i18n="audioModel">Lokales Hör-Modell</label>
+    <select id="audioModel">
+      <option value="effnet">EffNet (schneller, 400 Stile)</option>
+      <option value="maest">MAEST (langsamer, 519 Stile)</option>
+      <option value="both">Beide, zusammengefasst</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="extraTag" data-i18n="extraTag">Instrumente schreiben nach</label>
+    <select id="extraTag">
+      <option value="user1">User 1 im Mediafile</option>
+      <option value="albumartist">Album Artist</option>
+      <option value="off">Nicht schreiben</option>
+    </select>
+    <div class="hint" data-i18n="extraHint">MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.</div>
+  </div>
+  <div class="field">
+    <label for="llmBackend" data-i18n="backend">Direkte Analyse über</label>
+    <select id="llmBackend">
+      <option value="hermes" data-i18n="backendHermes">Hermes</option>
+      <option value="local" data-i18n="backendLocal">Lokale llama.cpp (RTX, Ordner models)</option>
+    </select>
+    <div class="hint" data-i18n="backendHint">ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.</div>
+  </div>
+  <div class="field">
+    <label><input id="summarize" type="checkbox"> <span data-i18n="summarize">Zweite LLM zum Kürzen</span></label>
+  </div>
+  <div class="row">
+    <button type="button" onclick="llm('runtime')" data-i18n="dlRuntime">Runtime laden</button>
+    <button type="button" onclick="llm('analyze')" data-i18n="dlAnalyze">3B laden</button>
+    <button type="button" onclick="llm('summarize')" data-i18n="dlSummary">1.5B laden</button>
+    <button type="button" onclick="llmStart()" data-i18n="llmStart">Lokal starten</button>
+  </div>
+  <p id="llmStatus" class="hint"></p>
+  <div class="row">
+    <button type="button" onclick="save()" data-i18n="save">Speichern</button>
+    <span id="status"></span>
+  </div>
+</div>
+<script>
+const TOOL = 'http://localhost:8765';
+const I18N = {
+  de: {
+    title: 'Einstellungen', back: 'Zurück', help: '? Hilfe', workers: 'Worker',
+    timeout: 'Timeout (Sekunden)', timeoutHint: 'Wie lange eine Hermes-Antwort warten darf. 0 = kein Limit. Standard 1800 (30 Minuten).',
+    mode: 'Analyse', modeWeb: 'Websuche (Hermes sucht den Track)', modeDirect: 'Direkt (kleines LLM, nur Tags und Dateiname)',
+    modeHint: 'Audio hört die Datei und schreibt Discogs-Stile in die Subgenres-Spalte. Den Genre-Tag übernimmst du danach per Hand.',
+    modeAudio: 'Audio (hört die Datei)',
+    audioModel: 'Lokales Hör-Modell', extraTag: 'Instrumente schreiben nach',
+    extraHint: 'MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.',
+    save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
+    backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
+    backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
+    summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
+  },
+  en: {
+    title: 'Settings', back: 'Back', help: '? Help', workers: 'Workers',
+    timeout: 'Timeout (seconds)', timeoutHint: 'How long a Hermes reply may take. 0 = no limit. Default 1800 (30 minutes).',
+    mode: 'Analysis', modeWeb: 'Web search (Hermes looks the track up)', modeDirect: 'Direct (small LLM, tags and filename only)',
+    modeHint: 'Audio listens to the file and writes Discogs styles into the subgenre column. Copy them into the genre tag yourself.',
+    modeAudio: 'Audio (listens to the file)',
+    audioModel: 'Local listening model', extraTag: 'Write instruments to',
+    extraHint: 'MagnaTagATune: guitar, rock, metal, voice, drums. Written into the file. VirtualDJ does not need to be running. If User 1 cannot be written, album artist is used.',
+    save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
+    backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
+    backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
+    summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
+  }
+};
+let lang = localStorage.getItem('vdj.lang') || 'de';
+const $ = id => document.getElementById(id);
+function t(key) { return (I18N[lang] || I18N.de)[key] || key; }
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+}
+function setLang(next) {
+  lang = next;
+  localStorage.setItem('vdj.lang', lang);
+  applyI18n();
+}
+async function load() {
+  const res = await fetch(`${TOOL}/api/config`);
+  if (!res.ok) throw new Error(res.status);
+  const cfg = await res.json();
+  if (cfg.hermes_url) $('hermesUrl').value = cfg.hermes_url;
+  if (cfg.api_key) $('apiKey').value = cfg.api_key;
+  if (cfg.workers) $('workers').value = String(cfg.workers);
+  $('timeout').value = String(cfg.timeout ?? 1800);
+  $('analyzeMode').value = ['direct', 'audio'].includes(cfg.analyze_mode) ? cfg.analyze_mode : 'web';
+  $('audioModel').value = ['maest', 'both'].includes(cfg.audio_model) ? cfg.audio_model : 'effnet';
+  $('extraTag').value = ['albumartist', 'off'].includes(cfg.extra_tag) ? cfg.extra_tag : 'user1';
+  $('llmBackend').value = cfg.llm_backend === 'local' ? 'local' : 'hermes';
+  $('summarize').checked = !!cfg.summarize;
+  refreshLlm();
+}
+async function save() {
+  $('status').textContent = '';
+  try {
+    const res = await fetch(`${TOOL}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        hermes_url: $('hermesUrl').value.trim(),
+        api_key: $('apiKey').value.trim(),
+        workers: parseInt($('workers').value) || 1,
+        timeout: parseInt($('timeout').value) || 0,
+        analyze_mode: $('analyzeMode').value,
+        audio_model: $('audioModel').value,
+        extra_tag: $('extraTag').value,
+        llm_backend: $('llmBackend').value,
+        summarize: $('summarize').checked
+      })
+    });
+    if (!res.ok) throw new Error(res.status);
+    $('status').textContent = t('saved');
+  } catch (e) {
+    $('status').textContent = t('fail') + e.message;
+  }
+}
+async function llm(which) {
+  $('llmStatus').textContent = which + '…';
+  const res = await fetch(`${TOOL}/api/llm/download`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ which })
+  });
+  if (!res.ok) $('llmStatus').textContent = t('fail') + res.status;
+}
+async function llmStart() {
+  await save();
+  const res = await fetch(`${TOOL}/api/llm/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const data = await res.json();
+  $('llmStatus').textContent = data.error || JSON.stringify(data.started || data);
+  refreshLlm();
+}
+async function refreshLlm() {
+  try {
+    const res = await fetch(`${TOOL}/api/llm`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const jobs = Object.entries(data.jobs || {}).map(([k, v]) => `${k}: ${v.state || ''} ${v.error || ''}`).join(' | ');
+    $('llmStatus').textContent = `Runtime ${data.runtime ? 'da' : 'fehlt'} · 3B ${data.analyze_model ? 'da' : 'fehlt'} · 1.5B ${data.summarize_model ? 'da' : 'fehlt'} · Ports ${data.analyze_up ? '8081' : '–'}/${data.summarize_up ? '8082' : '–'} ${jobs}`;
+  } catch (e) { /* server down */ }
+}
+setInterval(refreshLlm, 3000);
+applyI18n();
+load().catch(e => { $('status').textContent = t('fail') + e.message; });
+</script>
+</body>
+</html>

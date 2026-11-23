@@ -1,0 +1,16 @@
+models/
+runtime/
+_GENRE fehlt/
+__pycache__/
+*.pyc
+analyze.log
+state.json
+config.json
+release/
+*.zip
+*.mp3
+*.flac
+*.ogg
+*.opus
+*.m4a
+*.vdjstems
