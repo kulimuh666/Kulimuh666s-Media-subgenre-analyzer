@@ -307,4 +307,4 @@ def shorten(text, timeout=120):
     if not kept:
         return text
     logger.info(f"LLM summarize {text!r} -> {'/'.join(kept)!r}")
-    return "/".join(kept)
+    return " / ".join(kept)

@@ -490,7 +490,7 @@ def send_to_hermes(tags: Dict[str, Any], mode: Optional[str] = None, backend: Op
             "Nur den genaueren Stil, zum Beispiel Peak Time Techno/Driving Techno.\n"
             "- Jahr nur wenn es in den Angaben steht, sonst null.\n\n"
             "Antwort NUR als JSON ohne Markdown:\n"
-            '{"subgenres": "Stil1/Stil2", "einordnung": "Stil1/Stil2", "jahr": YYYY oder null}'
+            '{"subgenres": "Stil1 / Stil2", "einordnung": "Stil1 / Stil2", "jahr": YYYY oder null}'
         )
     else:
         prompt += (
@@ -517,7 +517,7 @@ def send_to_hermes(tags: Dict[str, Any], mode: Optional[str] = None, backend: Op
         f"Sonst null. Kein ungefähres Jahr, kein Jahrzehnt.\n"
         f"- Wenn du nichts belegen kannst, setze subgenres auf \"\" und jahr auf null.\n\n"
         f"Antwort NUR als JSON ohne Markdown:\n"
-        f'{{\n  "subgenres": "belegt1/belegt2",\n  "einordnung": "Stil1/Stil2",\n  "jahr": YYYY oder null\n}}'
+        f'{{\n  "subgenres": "belegt1 / belegt2",\n  "einordnung": "Stil1 / Stil2",\n  "jahr": YYYY oder null\n}}'
     )
 
     cfg = load_config()
@@ -657,7 +657,7 @@ def join_tags(*chunks: str) -> str:
         if any(set(words) < set(other) for _, other in items):
             continue
         kept.append(label)
-    return "/".join(kept)
+    return " / ".join(kept)
 
 
 def write_subgenre_tag(filepath: str, subgenres: str) -> tuple[bool, Optional[str]]:
@@ -2424,7 +2424,7 @@ def prepare_runtime() -> None:
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0041")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0042")
     print("=" * 60)
     prepare_runtime()
 

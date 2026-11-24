@@ -378,7 +378,7 @@ def predict(path, model="effnet"):
     ranked = merge_ranked(*groups)
     kept = keep_styles(ranked)
     return {
-        "subgenres": "/".join(kept),
+        "subgenres": " / ".join(kept),
         "einordnung": "",
         "jahr": None,
         "user1": mtt_tags(audio),
