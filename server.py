@@ -239,7 +239,7 @@ def update_track(filepath: str, **fields: Any) -> Optional[Dict[str, Any]]:
         for t in _state_data["tracks"]:
             if t.get("filepath") == filepath:
                 for k, v in fields.items():
-                    if k in ("status", "subgenres", "genre", "jahr", "error", "artist", "title"):
+                    if k in ("status", "subgenres", "genre", "jahr", "error", "artist", "title", "user1"):
                         t[k] = v
                 _update_counters()
                 return dict(t)
@@ -255,7 +255,7 @@ def set_status(filepath: str, status: str, **extra: Any) -> Optional[Dict[str, A
             if t.get("filepath") == filepath:
                 t["status"] = status
                 for k, v in extra.items():
-                    if k in ("subgenres", "genre", "jahr", "error", "artist", "title"):
+                    if k in ("subgenres", "genre", "jahr", "error", "artist", "title", "user1"):
                         t[k] = v
                 _update_counters()
                 return dict(t)
@@ -930,6 +930,73 @@ def write_user1_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
         return False, str(exc)
 
 
+def _xml_attr(text: str) -> str:
+    return (text or "").replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+
+def vdj_databases(filepath: str) -> list[Path]:
+    found = []
+    drive = Path(filepath).drive
+    if drive:
+        found.append(Path(drive + "\\VirtualDJ\\database.xml"))
+    home = os.environ.get("USERPROFILE", "")
+    if home:
+        found.append(Path(home) / "Documents" / "VirtualDJ" / "database.xml")
+    return [p for p in found if p.is_file()]
+
+
+def write_vdj_user1(filepath: str, text: str) -> tuple[bool, Optional[str]]:
+    """VirtualDJ liest User 1 nicht aus dem Datei-Tag, nur aus database.xml."""
+    dbs = vdj_databases(filepath)
+    if not dbs:
+        return False, "keine VirtualDJ-Datenbank gefunden"
+    p = Path(filepath)
+    rel = str(p).split(":", 1)[-1].lstrip("\\/")
+    needles = {rel, rel.replace("/", "\\"), str(p)}
+    value = _xml_attr(text)
+    wrote = 0
+    locked = False
+    for db in dbs:
+        try:
+            raw = db.read_text(encoding="utf-8")
+        except PermissionError:
+            locked = True
+            continue
+        except OSError as exc:
+            logger.warning(f"vdj read {db}: {exc}")
+            continue
+        idx = -1
+        for needle in needles:
+            mark = f'FilePath="{needle}"'
+            idx = raw.find(mark)
+            if idx >= 0:
+                break
+        if idx < 0:
+            continue
+        end = raw.find("<Song ", idx + 1)
+        if end < 0:
+            end = len(raw)
+        block = raw[idx:end]
+        if 'User1="' in block:
+            block2 = re.sub(r'User1="[^"]*"', f'User1="{value}"', block, count=1)
+        elif "<Tags " in block:
+            block2 = block.replace("<Tags ", f'<Tags User1="{value}" ', 1)
+        elif "</Song>" in block:
+            block2 = block.replace("</Song>", f'<Tags User1="{value}"/>\n</Song>', 1)
+        else:
+            continue
+        try:
+            db.write_text(raw[:idx] + block2 + raw[end:], encoding="utf-8")
+            wrote += 1
+        except PermissionError:
+            locked = True
+    if wrote:
+        return True, None
+    if locked:
+        return False, "VirtualDJ hat die Datenbank offen. VDJ schließen und nochmal schreiben."
+    return False, "Track steht noch nicht in der VirtualDJ-Datenbank. Einmal in VDJ laden, VDJ schließen, dann erneut schreiben."
+
+
 def write_albumartist_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
     try:
         p = Path(filepath)
@@ -1356,6 +1423,14 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
                 extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
             else:
                 extra_ok, extra_err = write_user1_tag(filepath, extra_value)
+                vdj_ok, vdj_err = write_vdj_user1(filepath, extra_value)
+                if vdj_ok:
+                    extra_ok = True
+                    extra_note = " | User1 in VirtualDJ-Datenbank"
+                else:
+                    if vdj_err:
+                        logger.warning(f"VDJ User1 {Path(filepath).name}: {vdj_err}")
+                        extra_note = f" | Datei-Tag ja, VirtualDJ sieht ihn nicht: {vdj_err}"
                 if not extra_ok:
                     extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
                     extra_field = "albumartist" if extra_ok else extra_field
@@ -1363,7 +1438,7 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
             if extra_ok and not extra_note:
                 extra_note = f" | {extra_field} {extra_value}"
         if success:
-            set_status(filepath, 'success', subgenres=subgenres, jahr=jahr or 0)
+            set_status(filepath, 'success', subgenres=subgenres, jahr=jahr or 0, user1=extra_value)
             logger.info(f"Success: {filepath} → {subgenres}{year_note}{extra_note}")
             return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr, 'extra': extra_value, 'extra_field': extra_field}
         else:
@@ -1915,6 +1990,7 @@ class VDJHandler(BaseHTTPRequestHandler):
                     "artist": t.get("artist", ""),
                     "title": t.get("title", ""),
                     "jahr": t.get("jahr", 0),
+                    "user1": t.get("user1", ""),
                     "error": t.get("error", ""),
                 }
                 for t in tracks
@@ -1958,8 +2034,49 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_llm_download()
         elif path == '/api/llm/start':
             self._handle_llm_start()
+        elif path == '/api/pick-folder':
+            self._handle_pick_folder()
+        elif path == '/api/reread':
+            self._handle_reread()
         else:
             self._send_json({"error": "Not found"}, 404)
+
+    def _handle_pick_folder(self):
+        script = (
+            "Add-Type -AssemblyName System.Windows.Forms; "
+            "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
+            "$d.Description = 'Ziel-Ordner'; "
+            "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }"
+        )
+        try:
+            proc = subprocess.run(
+                ["powershell", "-STA", "-NoProfile", "-Command", script],
+                capture_output=True, text=True, timeout=120,
+                encoding="utf-8", errors="replace",
+            )
+        except Exception as exc:
+            self._send_json({"error": str(exc)}, 500)
+            return
+        path = (proc.stdout or "").strip()
+        self._send_json({"path": path})
+
+    def _handle_reread(self):
+        body = self._parse_json_body() or {}
+        files = body.get("files") or []
+        out = []
+        for fp in files[:200]:
+            if not fp or not Path(fp).is_file():
+                continue
+            tags = read_tags(fp)
+            out.append({
+                "filepath": fp,
+                "genre": tags.get("genre") or "",
+                "composer": tags.get("composer") or "",
+                "jahr": tags.get("date") or "",
+                "user1": tags.get("user1") or "",
+                "albumartist": tags.get("albumartist") or "",
+            })
+        self._send_json({"files": out})
 
     def _handle_get_audio(self, params: Dict[str, List[str]]):
         """Stream an audio file so the GUI can preview it."""
@@ -2074,11 +2191,17 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "file not found"}, 404)
             return
         ok, err = writers[field](fp, value)
+        vdj_warn = ""
+        if field == "user1":
+            vdj_ok, vdj_err = write_vdj_user1(fp, value)
+            if not vdj_ok:
+                vdj_warn = vdj_err or ""
+                logger.warning(f"VDJ User1 {Path(fp).name}: {vdj_warn}")
         if not ok:
             self._send_json({"error": err or "write failed"}, 500)
             return
         logger.info(f"Field {field}: {fp} → {value}")
-        self._send_json({"filepath": fp, "field": field, "value": value})
+        self._send_json({"filepath": fp, "field": field, "value": value, "warning": vdj_warn})
 
     def _handle_row(self):
         body = self._parse_json_body()
@@ -2279,7 +2402,7 @@ def prepare_runtime() -> None:
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0039")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0040")
     print("=" * 60)
     prepare_runtime()
 

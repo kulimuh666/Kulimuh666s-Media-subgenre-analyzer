@@ -212,31 +212,56 @@ def merge_ranked(*groups):
 
 def mtt_tags(bands):
     classes = json.loads(MTT_LABELS.read_text(encoding="utf-8"))["classes"]
-    if bands.shape[0] < MTT_PATCH:
-        pad = np.zeros((MTT_PATCH - bands.shape[0], bands.shape[1]), dtype=np.float32)
-        chunks = [np.vstack([bands, pad])]
+    style = {
+        "techno", "electronic", "electric", "rock", "pop", "dance", "metal",
+        "ambient", "classical", "classic", "new age", "country", "indian",
+        "opera", "slow", "fast", "loud", "quiet", "soft", "weird", "beat", "beats",
+    }
+    chunks = []
+    if bands.shape[0] < 187:
+        pad = np.zeros((187, bands.shape[1]), dtype=np.float32)
+        pad[:bands.shape[0]] = bands
+        chunks = [pad]
     else:
-        chunks = [bands[i:i + MTT_PATCH] for i in range(0, bands.shape[0] - MTT_PATCH + 1, MTT_HOP)]
-    feed = np.stack(chunks).astype(np.float32)
-    ranked = score_model(MTT, MTT_LABELS, [feed], "activations")
-    # The JSON class order is the contract. score_model re-reads it.
+        step = 187
+        for start in range(0, bands.shape[0] - 186, step):
+            chunks.append(bands[start:start + 187])
+            if len(chunks) >= 8:
+                break
+    sess = session(MTT)
+    inp = sess.get_inputs()[0]
+    names = [o.name for o in sess.get_outputs()]
+    out_name = "model/Sigmoid" if "model/Sigmoid" in names else ("activations" if "activations" in names else names[0])
+    total = None
+    for chunk in chunks:
+        feed = chunk.astype(np.float32)[None, :, :]
+        if len(inp.shape) == 4 or (inp.shape and inp.shape[1] == 1):
+            feed = feed[:, None, :, :]
+        raw = sess.run([out_name], {inp.name: feed})[0]
+        flat = raw.reshape(-1)[:len(classes)]
+        total = flat if total is None else total + flat
+    scores = total / max(len(chunks), 1)
+    ranked = sorted(
+        ((float(scores[i]), style_name(classes[i])) for i in range(min(len(classes), scores.size))),
+        reverse=True,
+    )
+    if len(ranked) >= 3 and (ranked[0][0] - ranked[2][0]) < 0.04:
+        return ""
+    chosen = [(score, name) for score, name in ranked if score >= 0.35 and name.lower() not in style]
+    if not chosen:
+        chosen = [(score, name) for score, name in ranked if name.lower() not in style][:4]
+    names_out = []
+    used = set()
     drop_groups = [
         {"female vocal", "female voice", "female", "woman"},
         {"male vocal", "male voice", "male", "man"},
         {"vocal", "vocals", "voice", "singing"},
         {"no vocal", "no vocals", "no voice"},
-        {"beat", "beats"},
-        {"classic", "classical"},
         {"choir", "choral"},
     ]
-    chosen = [(score, name) for score, name in ranked if score >= 0.35]
-    if not chosen and ranked:
-        chosen = [ranked[0]]
-    names = []
-    used = set()
     for score, name in chosen:
         key = name.lower()
-        if key in used:
+        if key in used or key in style:
             continue
         group = next((g for g in drop_groups if key in g), None)
         if group and used & group:
@@ -244,10 +269,10 @@ def mtt_tags(bands):
         used.add(key)
         if group:
             used |= group
-        names.append(name)
-        if len(names) >= 12:
+        names_out.append(name)
+        if len(names_out) >= 6:
             break
-    return ", ".join(names)
+    return ", ".join(names_out)
 
 
 def predict(path, model="effnet"):
