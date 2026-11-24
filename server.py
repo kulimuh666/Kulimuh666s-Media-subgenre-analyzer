@@ -76,7 +76,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "timeout": 1800,
     "analyze_mode": "web",
     "audio_model": "effnet",
-    "extra_tag": "user1",
+    "extra_tag": "albumartist",
     "llm_backend": "hermes",
     "summarize": False,
     "python_path": "",
@@ -105,8 +105,7 @@ def _load_config_raw(path: Path | None = None) -> Dict[str, Any]:
         merged["analyze_mode"] = "web"
     if merged.get("audio_model") not in ("effnet", "maest", "both"):
         merged["audio_model"] = "effnet"
-    if merged.get("extra_tag") not in ("user1", "albumartist", "off"):
-        merged["extra_tag"] = "user1"
+    merged["extra_tag"] = "albumartist"
     if merged.get("llm_backend") not in ("hermes", "local"):
         merged["llm_backend"] = "hermes"
     merged["summarize"] = bool(merged.get("summarize", False))
@@ -1410,37 +1409,18 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
             year_note = f" | Jahr {jahr}" if year_ok else f" | Jahr nicht geschrieben: {year_err}"
         extra_note = ""
         extra_value = ""
-        extra_field = load_config().get("extra_tag") or "off"
-        if extra_field != "off" and not (result.get("user1") or "").strip():
-            heard = recognize_audio(filepath, "mtt") or {}
-            if heard.get("user1"):
-                result["user1"] = heard["user1"]
-            elif heard.get("error"):
-                logger.warning(f"User1 audio {Path(filepath).name}: {heard['error']}")
-        extra_value = (result.get("user1") or "").strip()
-        if success and extra_value and extra_field != "off":
-            if extra_field == "albumartist":
-                extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
-            else:
-                extra_ok, extra_err = write_user1_tag(filepath, extra_value)
-                vdj_ok, vdj_err = write_vdj_user1(filepath, extra_value)
-                if vdj_ok:
-                    extra_ok = True
-                    extra_note = " | User1 in VirtualDJ-Datenbank"
-                else:
-                    if vdj_err:
-                        logger.warning(f"VDJ User1 {Path(filepath).name}: {vdj_err}")
-                        extra_note = f" | Datei-Tag ja, VirtualDJ sieht ihn nicht: {vdj_err}"
-                if not extra_ok:
-                    extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
-                    extra_field = "albumartist" if extra_ok else extra_field
-                    extra_note = " | User1 nicht schreibbar, Album Artist benutzt" if extra_ok else f" | Extra nicht geschrieben: {extra_err}"
-            if extra_ok and not extra_note:
-                extra_note = f" | {extra_field} {extra_value}"
+        heard = recognize_audio(filepath, "mtt") or {}
+        if heard.get("user1"):
+            extra_value = heard["user1"].strip()
+        elif heard.get("error"):
+            logger.warning(f"Instrumente {Path(filepath).name}: {heard['error']}")
+        if success and extra_value:
+            extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
+            extra_note = f" | Album Artist {extra_value}" if extra_ok else f" | Album Artist nicht geschrieben: {extra_err}"
         if success:
             set_status(filepath, 'success', subgenres=subgenres, jahr=jahr or 0, user1=extra_value)
             logger.info(f"Success: {filepath} → {subgenres}{year_note}{extra_note}")
-            return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr, 'extra': extra_value, 'extra_field': extra_field}
+            return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr, 'extra': extra_value, 'extra_field': 'albumartist'}
         else:
             set_status(filepath, 'error', error=write_err or "Write failed")
             logger.error(f"Write error for {filepath}: {write_err}")
@@ -1571,6 +1551,38 @@ def load_done() -> set:
 def save_done(paths: set) -> None:
     path = PLUGIN_DIR / "done.json"
     path.write_text(json.dumps(sorted(paths), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def run_instruments(files: List[str]):
+    """Hear instruments and write them to Album Artist. Does not touch genre or composer."""
+    set_analyzing(True)
+    audio_files = [fp for fp in files if fp and Path(fp).is_file()]
+    with _state_lock:
+        _state_data["tracks"] = []
+        _state_data["total_files"] = len(audio_files)
+        _state_data["completed"] = 0
+    if not audio_files:
+        set_analyzing(False)
+        return
+    for fp in audio_files:
+        add_track(fp)
+        tags = read_tags(fp)
+        update_track(fp, genre=tags.get("genre") or "", artist=tags.get("artist") or "", title=tags.get("title") or "", jahr=tags.get("date") or 0, user1=tags.get("albumartist") or "")
+        if not is_analyzing():
+            break
+        set_status(fp, "analyzing")
+        heard = recognize_audio(fp, "mtt") or {}
+        text = (heard.get("user1") or "").strip()
+        if text:
+            ok, err = write_albumartist_tag(fp, text)
+            if ok:
+                set_status(fp, "success", user1=text)
+                logger.info(f"Instrumente: {fp} → {text}")
+            else:
+                set_status(fp, "error", error=err or "Album Artist nicht geschrieben")
+        else:
+            set_status(fp, "error", error=heard.get("error") or "Instrumente nicht unterscheidbar")
+    set_analyzing(False)
 
 
 def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = None, hide_done: bool = False, files: Optional[List[str]] = None):
@@ -2034,12 +2046,26 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_llm_download()
         elif path == '/api/llm/start':
             self._handle_llm_start()
+        elif path == '/api/instruments':
+            self._handle_instruments()
         elif path == '/api/pick-folder':
             self._handle_pick_folder()
         elif path == '/api/reread':
             self._handle_reread()
         else:
             self._send_json({"error": "Not found"}, 404)
+
+    def _handle_instruments(self):
+        if is_analyzing():
+            self._send_json({"error": "Analysis already running"}, 409)
+            return
+        body = self._parse_json_body() or {}
+        files = [fp for fp in (body.get("files") or []) if isinstance(fp, str)]
+        if not files:
+            self._send_json({"error": "Keine Dateien in der Liste."}, 400)
+            return
+        threading.Thread(target=run_instruments, args=(files,), daemon=True).start()
+        self._send_json({"message": f"Instrumentanalyse für {len(files)} Dateien", "count": len(files)})
 
     def _handle_pick_folder(self):
         script = (
@@ -2177,6 +2203,8 @@ class VDJHandler(BaseHTTPRequestHandler):
             return
         fp = body.get("filepath") or ""
         field = body.get("field") or ""
+        if field == "user1":
+            field = "albumartist"
         value = (body.get("value") if body.get("value") is not None else "").strip()
         writers = {
             "genre": write_genre_tag,
@@ -2191,17 +2219,11 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "file not found"}, 404)
             return
         ok, err = writers[field](fp, value)
-        vdj_warn = ""
-        if field == "user1":
-            vdj_ok, vdj_err = write_vdj_user1(fp, value)
-            if not vdj_ok:
-                vdj_warn = vdj_err or ""
-                logger.warning(f"VDJ User1 {Path(fp).name}: {vdj_warn}")
         if not ok:
             self._send_json({"error": err or "write failed"}, 500)
             return
         logger.info(f"Field {field}: {fp} → {value}")
-        self._send_json({"filepath": fp, "field": field, "value": value, "warning": vdj_warn})
+        self._send_json({"filepath": fp, "field": field, "value": value})
 
     def _handle_row(self):
         body = self._parse_json_body()
@@ -2309,7 +2331,7 @@ class VDJHandler(BaseHTTPRequestHandler):
             elif key == "audio_model":
                 cfg["audio_model"] = value if value in ("effnet", "maest", "both") else "effnet"
             elif key == "extra_tag":
-                cfg["extra_tag"] = value if value in ("user1", "albumartist", "off") else "user1"
+                cfg["extra_tag"] = "albumartist"
             elif key == "llm_backend":
                 cfg["llm_backend"] = value if value in ("hermes", "local") else "hermes"
             elif key == "summarize":
@@ -2402,7 +2424,7 @@ def prepare_runtime() -> None:
 def main():
     """Start the VDJ Analyzer HTTP server."""
     print("=" * 60)
-    print("Kulimuh666's Media Subgenre Analyzer Server V.0040")
+    print("Kulimuh666's Media Subgenre Analyzer Server V.0041")
     print("=" * 60)
     prepare_runtime()
 

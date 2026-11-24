@@ -59,6 +59,59 @@ def _filterbank():
 
 
 FB = _filterbank()
+MTT_WINDOW = (0.5 - 0.5 * np.cos(2.0 * np.pi * np.arange(FRAME) / FRAME)).astype(np.float32)
+
+
+def _hz_to_mel_slaney(hz):
+    hz = np.asarray(hz, dtype=np.float64)
+    slope = 3.0 / 200.0
+    min_log_hz = 1000.0
+    min_log_mel = min_log_hz * slope
+    logstep = np.log(6.4) / 27.0
+    linear = hz * slope
+    above = hz >= min_log_hz
+    return np.where(above, min_log_mel + np.log(np.maximum(hz, 1e-6) / min_log_hz) / logstep, linear)
+
+
+def _mel_to_hz_slaney(mel):
+    mel = np.asarray(mel, dtype=np.float64)
+    slope = 3.0 / 200.0
+    min_log_hz = 1000.0
+    min_log_mel = min_log_hz * slope
+    logstep = np.log(6.4) / 27.0
+    linear = mel / slope
+    above = mel >= min_log_mel
+    return np.where(above, min_log_hz * np.exp(logstep * (mel - min_log_mel)), linear)
+
+
+def _musicnn_filterbank():
+    """Essentia TensorflowInputMusiCNN: Slaney mel, linear weight, unit_tri, power."""
+    n_freq = FRAME // 2 + 1
+    low = float(_hz_to_mel_slaney(0.0))
+    high = float(_hz_to_mel_slaney(SR / 2.0))
+    step = (high - low) / (BANDS + 1)
+    freqs = _mel_to_hz_slaney(low + step * np.arange(BANDS + 2))
+    scale = (SR / 2.0) / (n_freq - 1)
+    fb = np.zeros((BANDS, n_freq), dtype=np.float64)
+    for i in range(BANDS):
+        left, center, right = float(freqs[i]), float(freqs[i + 1]), float(freqs[i + 2])
+        fstep1 = center - left
+        fstep2 = right - center
+        jbegin = int(np.ceil(left / scale))
+        jend = min(n_freq - 1, int(np.floor(right / scale)))
+        for j in range(max(0, jbegin), jend + 1):
+            binfreq = j * scale
+            if binfreq < center:
+                fb[i, j] = (binfreq - left) / fstep1 if fstep1 else 0.0
+            else:
+                fb[i, j] = (right - binfreq) / fstep2 if fstep2 else 0.0
+        area = (fstep1 + fstep2) / 2.0
+        if area:
+            fb[i] /= area
+    return fb.astype(np.float32)
+
+
+MTT_FB = _musicnn_filterbank()
 WINDOW = (0.5 - 0.5 * np.cos(2.0 * np.pi * np.arange(FRAME) / (FRAME - 1))).astype(np.float32)
 
 
@@ -82,6 +135,29 @@ def load_audio(path):
 def segments(audio):
     """The whole file. Three windows missed the drop and kept the breakdown."""
     return [audio]
+
+
+def musicnn_mels(audio):
+    """Mel bands the MTT MusiCNN was trained on. Not the EffNet mel."""
+    padded = np.concatenate([
+        np.zeros(FRAME // 2, dtype=np.float32),
+        np.asarray(audio, dtype=np.float32),
+    ])
+    n = 1 + max(0, (padded.size - FRAME) // HOP)
+    need = (n - 1) * HOP + FRAME
+    if padded.size < need:
+        padded = np.concatenate([padded, np.zeros(need - padded.size, dtype=np.float32)])
+    if n < 1:
+        padded = np.zeros(FRAME, dtype=np.float32)
+        n = 1
+    frames = np.lib.stride_tricks.as_strided(
+        padded,
+        shape=(n, FRAME),
+        strides=(padded.strides[0] * HOP, padded.strides[0]),
+        writeable=False,
+    ).copy()
+    power = np.abs(np.fft.rfft(frames * MTT_WINDOW, axis=1)) ** 2
+    return np.log10(1.0 + 10000.0 * (power @ MTT_FB.T)).astype(np.float32)
 
 
 def mels(audio):
@@ -210,46 +286,48 @@ def merge_ranked(*groups):
     return sorted(((score, name) for name, score in best.items()), reverse=True)
 
 
-def mtt_tags(bands):
+def mtt_tags(audio):
     classes = json.loads(MTT_LABELS.read_text(encoding="utf-8"))["classes"]
     style = {
         "techno", "electronic", "electric", "rock", "pop", "dance", "metal",
         "ambient", "classical", "classic", "new age", "country", "indian",
         "opera", "slow", "fast", "loud", "quiet", "soft", "weird", "beat", "beats",
+        "no vocal", "no vocals", "no voice",
     }
-    chunks = []
-    if bands.shape[0] < 187:
-        pad = np.zeros((187, bands.shape[1]), dtype=np.float32)
+    bands = musicnn_mels(audio)
+    patch, hop = 187, 93
+    if bands.shape[0] < patch:
+        pad = np.zeros((patch, bands.shape[1]), dtype=np.float32)
         pad[:bands.shape[0]] = bands
         chunks = [pad]
     else:
-        step = 187
-        for start in range(0, bands.shape[0] - 186, step):
-            chunks.append(bands[start:start + 187])
-            if len(chunks) >= 8:
-                break
+        chunks = [bands[start:start + patch] for start in range(0, bands.shape[0] - patch + 1, hop)]
     sess = session(MTT)
     inp = sess.get_inputs()[0]
     names = [o.name for o in sess.get_outputs()]
-    out_name = "model/Sigmoid" if "model/Sigmoid" in names else ("activations" if "activations" in names else names[0])
-    total = None
-    for chunk in chunks:
-        feed = chunk.astype(np.float32)[None, :, :]
-        if len(inp.shape) == 4 or (inp.shape and inp.shape[1] == 1):
-            feed = feed[:, None, :, :]
+    out_name = "activations" if "activations" in names else names[0]
+    parts = []
+    for start in range(0, len(chunks), 32):
+        feed = np.stack(chunks[start:start + 32]).astype(np.float32)
         raw = sess.run([out_name], {inp.name: feed})[0]
-        flat = raw.reshape(-1)[:len(classes)]
-        total = flat if total is None else total + flat
-    scores = total / max(len(chunks), 1)
+        parts.append(raw.reshape(raw.shape[0], -1)[:, :len(classes)])
+    mat = np.concatenate(parts, axis=0)
+    keep = max(1, int(np.ceil(mat.shape[0] * 0.25)))
+    robust = np.partition(mat, mat.shape[0] - keep, axis=0)[-keep:].mean(axis=0)
     ranked = sorted(
-        ((float(scores[i]), style_name(classes[i])) for i in range(min(len(classes), scores.size))),
+        ((float(robust[i]), style_name(classes[i])) for i in range(min(len(classes), robust.size))),
         reverse=True,
     )
-    if len(ranked) >= 3 and (ranked[0][0] - ranked[2][0]) < 0.04:
+    if len(ranked) >= 5 and (ranked[0][0] - ranked[4][0]) < 0.015:
         return ""
-    chosen = [(score, name) for score, name in ranked if score >= 0.35 and name.lower() not in style]
+    instruments = [(score, name) for score, name in ranked if name.lower() not in style]
+    if not instruments:
+        return ""
+    top = instruments[0][0]
+    floor = max(0.08, top * 0.45)
+    chosen = [(score, name) for score, name in instruments if score >= floor][:8]
     if not chosen:
-        chosen = [(score, name) for score, name in ranked if name.lower() not in style][:4]
+        chosen = instruments[:4]
     names_out = []
     used = set()
     drop_groups = [
@@ -270,8 +348,6 @@ def mtt_tags(bands):
         if group:
             used |= group
         names_out.append(name)
-        if len(names_out) >= 6:
-            break
     return ", ".join(names_out)
 
 
@@ -290,9 +366,10 @@ def predict(path, model="effnet"):
     missing = [p.name for p in needed if not p.is_file()]
     if missing:
         raise FileNotFoundError("audio model missing: " + ", ".join(missing))
-    bands = mels(load_audio(path))
+    audio = load_audio(path)
     if model == "mtt":
-        return {"subgenres": "", "einordnung": "", "jahr": None, "user1": mtt_tags(bands), "model": "mtt"}
+        return {"subgenres": "", "einordnung": "", "jahr": None, "user1": mtt_tags(audio), "model": "mtt"}
+    bands = mels(audio)
     groups = []
     if model in ("effnet", "both"):
         groups.append(effnet_ranked(bands))
@@ -304,7 +381,7 @@ def predict(path, model="effnet"):
         "subgenres": "/".join(kept),
         "einordnung": "",
         "jahr": None,
-        "user1": mtt_tags(bands),
+        "user1": mtt_tags(audio),
         "model": model,
         "scores": [{"name": name, "score": round(score, 3)} for score, name in ranked[:8]],
     }

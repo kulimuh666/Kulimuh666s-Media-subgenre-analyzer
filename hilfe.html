@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0040</title>
+<title>Hilfe — Kulimuh666's Media Subgenre Analyzer V.0041</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
@@ -33,7 +33,7 @@
     </div>
   </div>
   <div data-lang-block="de">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0040</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0041</h1>
   <p>Schreibt Subgenres und das Erscheinungsjahr in Audio-Dateien. Die Dateien bleiben auf dem PC, auf dem der Tool-Server läuft. Hermes liefert nur die Einschätzung.</p>
 
   <h2>Zwei Adressen, zwei Aufgaben</h2>
@@ -51,8 +51,7 @@
     <li>Aktualisieren in den Einstellungen holt die neueste Version von GitHub und ersetzt nur die Programmdateien. config.json, done.json und die Modelle bleiben. Danach das Server-Fenster schließen und start_gui.bat neu starten. API testen zeigt das Ergebnis der Hermes-Adresse in einer Meldung, ohne den Key.</li>
     <li>Limit setzen, Aktualisieren. Fertige ignorieren beim Laden lässt Dateien weg, deren Genre oder Komponist schon Daten hat, und Tracks, die mit Fertig aus der Liste genommen wurden. Fertig entfernt die Zeile und lädt den nächsten Track. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
     <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
-    <li>In den Einstellungen wählst du EffNet, MAEST oder beide. Beide heißt: die Stile werden nach Score zusammengelegt, ohne eine zweite LLM. Die Instrumentenspalte schreibt Gitarre, Stimme und Drums nach User 1 oder Album Artist, nicht Techno oder Electronic. VirtualDJ liest User 1 nur aus seiner Datenbank. Dafür muss VirtualDJ zu sein, sonst überschreibt es den Wert beim Beenden. Genre, Subgenres und diese Spalte haben einen Stift.</li>
-    <li>Ordner wählen neben dem Ziel-Ordner öffnet die Windows-Pfadauswahl. Alle analysieren und Markierte analysieren lassen die Liste stehen und schreiben Subgenres, Jahr und User 1 in die Zeile. Neue Tracks holst du mit Neue Daten laden.</li>
+    <li>Instrumentanalyse hört alle Dateien in der Liste und schreibt die Instrumente nach Album Artist. Nicht nach User 1. Das Modell nutzt die MusicNN-Mel-Filterbank und überlappende Fenster, damit Drop und Breakdown nicht dasselbe ergeben. Techno und Electronic bleiben draußen.</li>
     <li>Analyseart Audio hört die ganze Datei, nicht nur drei Ausschnitte, und schreibt die erkannten Discogs-Stile in die Subgenres-Spalte und ins Komponist-Feld. Techno, Hard Techno, Minimal Techno, Schranz, Industrial, Psytrance, Goa Trance, Tech Trance, Progressive Trance und weitere, wenn das Modell sie hört. Das Genre-Feld bleibt unangetastet. Den passenden Text übernimmst du mit dem Genre-Button. Websuche und Direkt bleiben die anderen Analysearten.</li>
     <li>▶ spielt ab und wird zu ⏸. Ordner öffnet den Explorer. Der Stift neben dem Genre öffnet ein Fenster mit dem ganzen Genre-Text und schreibt ihn direkt in die Datei. Genre übernimmt die Subgenres ins Genre-Feld.</li>
   </ol>
@@ -87,10 +86,10 @@ API_SERVER_PORT=8642</pre>
 
   <h2>Tool-Server dieser App</h2>
   <pre>py -3.15 server.py</pre>
-  <p>Oder <code>start_gui.bat</code> im selben Ordner. Vor dem Port prüft das Server-Fenster mutagen und installiert av, numpy und onnxruntime in ein Python 3.11–3.14. Audio-Modelle laden holt EffNet, MusicNN und MAEST nach <code>models</code>. User 1 geht in die Datei und in die VirtualDJ-Datenbank. VirtualDJ muss dabei geschlossen sein. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
+  <p>Oder <code>start_gui.bat</code> im selben Ordner. Vor dem Port prüft das Server-Fenster mutagen und installiert av, numpy und onnxruntime in ein Python 3.11–3.14. Audio-Modelle laden holt EffNet, MusicNN und MAEST nach <code>models</code>. Instrumente gehen nach Album Artist. <code>analyze.log</code>, <code>config.json</code> und <code>state.json</code> entstehen neben <code>server.py</code>, nicht in einem festen Temp-Ordner. Fenster nicht schließen. Port 8765.</p>
   </div>
   <div data-lang-block="en">
-  <h1>Kulimuh666's Media Subgenre Analyzer V.0040</h1>
+  <h1>Kulimuh666's Media Subgenre Analyzer V.0041</h1>
   <p>Writes subgenres and the release year into audio files. The files stay on the PC that runs the tool server. Hermes only returns the judgement.</p>
   <h2>Language</h2>
   <p>The flags at the top right switch German and English. The choice is shared with the app and kept. German is the default.</p>
@@ -100,8 +99,8 @@ API_SERVER_PORT=8642</pre>
     <li>Update in Settings downloads the latest GitHub release and replaces only the program files. config.json, done.json and the models stay. Then close the server window and start start_gui.bat again.</li>
     <li>Set a limit and refresh. Ignore finished when loading skips files whose genre or composer already has data, and tracks marked Finished. Finished removes that row and loads the next track. Load new data fetches the next tracks with empty genre and composer.</li>
     <li>Start keeps genre, composer and year already shown. Web search lets Hermes look the track up. Direct analyses from tags, filename and folder only, without web search, for a small or slow model. The timeout in Settings limits how long a reply may take. 0 waits with no limit.</li>
-    <li>Choose folder next to the target folder opens the Windows folder picker. Analyze all and Analyze marked keep the list and write subgenres, year and User 1 into the row. Load new data fetches the next tracks.</li>
-    <li>▶ plays and turns into ⏸. The pencil next to Genre opens a window with the full genre text and writes it to the file. Genre copies the subgenres into that field. VirtualDJ reads User 1 only from its database. Close VirtualDJ before writing, or it overwrites the value on exit.</li>
+    <li>Instrument analysis listens to every file in the list and writes the instruments to album artist. Not to User 1. The model uses the MusicNN mel filterbank and overlapping windows, so the drop and the breakdown are not scored as the same thing. Techno and electronic stay out.</li>
+    <li>▶ plays and turns into ⏸. The pencil next to Genre opens a window with the full genre text and writes it to the file. Genre copies the subgenres into that field.</li>
   </ol>
   <h2>Formats</h2>
   <p>Supported: mp3, flac, m4a, mp4, aac, ogg, opus. m4a and mp4, including a video track, are read and written as MP4.</p>

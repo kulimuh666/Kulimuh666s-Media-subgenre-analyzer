@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0040</title>
+<title>Einstellungen — Kulimuh666's Media Subgenre Analyzer V.0041</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -69,7 +69,7 @@ button {
 <body>
 <div class="header">
   <h1 data-i18n="title">Einstellungen</h1>
-  <span class="badge">V.0040</span>
+  <span class="badge">V.0041</span>
   <a class="badge" href="gui.html" data-i18n="back" onclick="if (window.opener) { window.close(); return false; }">Zurück</a>
   <a class="badge" href="hilfe.html" data-i18n="help" onclick="const w = window.open('hilfe.html','analyzer-help','width=960,height=780,resizable=yes,scrollbars=yes'); if (w) { w.focus(); return false; }">? Hilfe</a>
   <div class="lang-switch">
@@ -121,13 +121,8 @@ button {
     </select>
   </div>
   <div class="field">
-    <label for="extraTag" data-i18n="extraTag">Instrumente schreiben nach</label>
-    <select id="extraTag">
-      <option value="user1">User 1 im Mediafile</option>
-      <option value="albumartist">Album Artist</option>
-      <option value="off">Nicht schreiben</option>
-    </select>
-    <div class="hint" data-i18n="extraHint">MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.</div>
+    <label data-i18n="extraTag">Instrumente</label>
+    <div class="hint" data-i18n="extraHint">Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth nach Album Artist. Nicht nach User 1. Techno und Electronic kommen da nicht rein.</div>
   </div>
   <div class="field">
     <label for="pythonPath" data-i18n="pythonPath">Python für Audio</label>
@@ -171,8 +166,8 @@ const I18N = {
     mode: 'Analyse', modeWeb: 'Websuche (Hermes sucht den Track)', modeDirect: 'Direkt (kleines LLM, nur Tags und Dateiname)',
     modeHint: 'Audio hört die Datei und schreibt Discogs-Stile in die Subgenres-Spalte. Den Genre-Tag übernimmst du danach per Hand.',
     modeAudio: 'Audio (hört die Datei)',
-    audioModel: 'Lokales Hör-Modell', extraTag: 'Instrumente schreiben nach',
-    extraHint: 'MagnaTagATune: Gitarre, Rock, Metal, Stimme, Drums. Steht in der Datei, VirtualDJ muss nicht laufen. Fehlt User 1, wird Album Artist benutzt.',
+    audioModel: 'Lokales Hör-Modell', extraTag: 'Instrumente',
+    extraHint: 'Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth nach Album Artist. Nicht nach User 1.',
     save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
     testApi: 'API testen', testOk: 'API ok.', testFail: 'API nicht ok: ', testNeed: 'Adresse und Key eintragen.',
     updateApp: 'Aktualisieren', updateBusy: 'Suche die neueste GitHub-Version…',
@@ -189,8 +184,8 @@ const I18N = {
     mode: 'Analysis', modeWeb: 'Web search (Hermes looks the track up)', modeDirect: 'Direct (small LLM, tags and filename only)',
     modeHint: 'Audio listens to the file and writes Discogs styles into the subgenre column. Copy them into the genre tag yourself.',
     modeAudio: 'Audio (listens to the file)',
-    audioModel: 'Local listening model', extraTag: 'Write instruments to',
-    extraHint: 'MagnaTagATune: guitar, rock, metal, voice, drums. Written into the file. VirtualDJ does not need to be running. If User 1 cannot be written, album artist is used.',
+    audioModel: 'Local listening model', extraTag: 'Instruments',
+    extraHint: 'Instrument analysis writes guitar, voice, drums and synth to album artist. Not to User 1.',
     save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
     testApi: 'Test API', testOk: 'API ok.', testFail: 'API not ok: ', testNeed: 'Enter the address and key.',
     updateApp: 'Update', updateBusy: 'Looking for the latest GitHub version…',
@@ -225,7 +220,6 @@ async function load() {
   $('timeout').value = String(cfg.timeout ?? 1800);
   $('analyzeMode').value = ['direct', 'audio'].includes(cfg.analyze_mode) ? cfg.analyze_mode : 'web';
   $('audioModel').value = ['maest', 'both'].includes(cfg.audio_model) ? cfg.audio_model : 'effnet';
-  $('extraTag').value = ['albumartist', 'off'].includes(cfg.extra_tag) ? cfg.extra_tag : 'user1';
   if (cfg.python_path) $('pythonPath').value = cfg.python_path;
   $('llmBackend').value = cfg.llm_backend === 'local' ? 'local' : 'hermes';
   $('summarize').checked = !!cfg.summarize;
@@ -291,7 +285,6 @@ async function save() {
         timeout: parseInt($('timeout').value) || 0,
         analyze_mode: $('analyzeMode').value,
         audio_model: $('audioModel').value,
-        extra_tag: $('extraTag').value,
         llm_backend: $('llmBackend').value,
         summarize: $('summarize').checked,
         python_path: $('pythonPath').value.trim()

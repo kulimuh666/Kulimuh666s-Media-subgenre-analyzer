@@ -1,9 +1,9 @@
 @echo off
-title Kulimuh666's Media Subgenre Analyzer V.0040
+title Kulimuh666's Media Subgenre Analyzer V.0041
 cd /d "%~dp0"
 
 echo ========================================
-echo  Kulimuh666's Media Subgenre Analyzer V.0040
+echo  Kulimuh666's Media Subgenre Analyzer V.0041
 echo ========================================
 echo.
 
