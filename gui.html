@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0043</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0044</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -325,7 +325,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0043</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0044</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
@@ -398,6 +398,10 @@ body { padding-bottom: 52px; }
         <input id="filterAlbum" type="text" data-i18n-placeholder="filterPlaceholder" placeholder="guitar  -vocal" oninput="applyQuery()">
       </div>
       <div class="field">
+        <label for="filterStatus" data-i18n="filterStatus">Status</label>
+        <input id="filterStatus" type="text" data-i18n-placeholder="filterStatusPlaceholder" placeholder="Wartend  -fehler" oninput="applyQuery()">
+      </div>
+      <div class="field">
         <label for="sortCol" data-i18n="sortBy">Sortierung</label>
         <select id="sortCol" onchange="applyQuery()">
           <option value="" data-i18n="sortNone">Keine</option>
@@ -406,6 +410,7 @@ body { padding-bottom: 52px; }
           <option value="sub" data-i18n="subgenres">Subgenres</option>
           <option value="album" data-i18n="albumArtist">Album Artist</option>
           <option value="year" data-i18n="year">Jahr</option>
+          <option value="status" data-i18n="status">Status</option>
         </select>
       </div>
       <div class="field">
@@ -468,8 +473,8 @@ const I18N = {
     workersRecommended: '1 (empfohlen)', targetFolder: 'Ziel-Ordner', targetPlaceholder: 'Ordner auf diesem PC', pickFolder: 'Ordner wählen',
     limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden',    hideDone: 'Fertige ignorieren beim Laden', doneBtn: 'Fertig', clearLog: '🗑 Log leeren',
     analyzeAll: 'Alle analysieren', analyzeMarked: 'Markierte analysieren', instruments: 'Instrumentanalyse', noneMarked: 'Keine Datei markiert.',
-    filterGenre: 'Filter Genre', filterSub: 'Filter Subgenres', filterAlbum: 'Filter Album Artist',
-    filterPlaceholder: 'Techno  -hard', filterHint: 'Freier Text. Techno heißt enthalten, -techno heißt nicht enthalten. Mehrere Wörter gelten zusammen.',
+    filterGenre: 'Filter Genre', filterSub: 'Filter Subgenres', filterAlbum: 'Filter Album Artist', filterStatus: 'Filter Status',
+    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Wartend  -fehler', filterHint: 'Freier Text. Techno heißt enthalten, -techno heißt nicht enthalten. Mehrere Wörter gelten zusammen.',
     sortBy: 'Sortierung', sortDir: 'Richtung', sortNone: 'Keine', sortAsc: 'A → Z', sortDesc: 'Z → A',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Beide',
     results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
@@ -499,8 +504,8 @@ const I18N = {
     workersRecommended: '1 (recommended)', targetFolder: 'Target folder', targetPlaceholder: 'Folder on this PC', pickFolder: 'Choose folder',
     limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data',    hideDone: 'Ignore finished when loading', doneBtn: 'Finished', clearLog: '🗑 Clear log',
     analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', instruments: 'Instrument analysis', noneMarked: 'No file marked.',
-    filterGenre: 'Filter genre', filterSub: 'Filter subgenres', filterAlbum: 'Filter album artist',
-    filterPlaceholder: 'Techno  -hard', filterHint: 'Free text. Techno means contains, -techno means does not contain. Several words apply together.',
+    filterGenre: 'Filter genre', filterSub: 'Filter subgenres', filterAlbum: 'Filter album artist', filterStatus: 'Filter status',
+    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Waiting  -error', filterHint: 'Free text. Techno means contains, -techno means does not contain. Several words apply together.',
     sortBy: 'Sort', sortDir: 'Direction', sortNone: 'None', sortAsc: 'A → Z', sortDesc: 'Z → A',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Both',
     results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
@@ -910,6 +915,11 @@ function textMatches(value, query) {
   });
 }
 
+function statusText(row) {
+  const label = (row.querySelector('.status-badge')?.textContent || '').replace(/[✓✗↷?⟳⏳.]/g, ' ').replace(/\s+/g, ' ').trim();
+  return `${label} ${row.dataset.status || ''}`.trim();
+}
+
 function rowSortValue(row, col) {
   const cells = row.querySelectorAll('td');
   if (col === 'file') return row.dataset.fp || '';
@@ -917,6 +927,7 @@ function rowSortValue(row, col) {
   if (col === 'sub') return cellText(cells[4]);
   if (col === 'album') return cellText(cells[5]);
   if (col === 'year') return cellText(cells[6]);
+  if (col === 'status') return statusText(row);
   return '';
 }
 
@@ -926,6 +937,7 @@ function applyQuery() {
   const genreQ = $('filterGenre')?.value || '';
   const subQ = $('filterSub')?.value || '';
   const albumQ = $('filterAlbum')?.value || '';
+  const statusQ = $('filterStatus')?.value || '';
   const col = $('sortCol')?.value || '';
   const dir = $('sortDir')?.value === 'desc' ? -1 : 1;
   const rows = [...body.querySelectorAll('tr[data-fp]')];
@@ -933,7 +945,8 @@ function applyQuery() {
     const cells = row.querySelectorAll('td');
     const ok = textMatches(cellText(cells[3]), genreQ)
       && textMatches(cellText(cells[4]), subQ)
-      && textMatches(cellText(cells[5]), albumQ);
+      && textMatches(cellText(cells[5]), albumQ)
+      && textMatches(statusText(row), statusQ);
     row.classList.toggle('filter-hide', !ok);
   });
   if (col) {
