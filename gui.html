@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0045</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0046</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -325,7 +325,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0045</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0046</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
@@ -387,19 +387,19 @@ body { padding-bottom: 52px; }
     <div class="query-filter">
       <div class="field">
         <label for="filterGenre" data-i18n="filterGenre">Genre</label>
-        <input id="filterGenre" type="text" data-i18n-placeholder="filterPlaceholder" placeholder="Techno  -hard" oninput="applyQuery()">
+        <input id="filterGenre" type="text" value="*" data-i18n-placeholder="filterPlaceholder" placeholder="Techno  -hard" oninput="applyQuery()">
       </div>
       <div class="field">
         <label for="filterSub" data-i18n="filterSub">Subgenres</label>
-        <input id="filterSub" type="text" data-i18n-placeholder="filterPlaceholder" placeholder="Techno  -hard" oninput="applyQuery()">
+        <input id="filterSub" type="text" value="*" data-i18n-placeholder="filterPlaceholder" placeholder="Techno  -hard" oninput="applyQuery()">
       </div>
       <div class="field">
         <label for="filterAlbum" data-i18n="filterAlbum">Album Artist</label>
-        <input id="filterAlbum" type="text" data-i18n-placeholder="filterPlaceholder" placeholder="guitar  -vocal" oninput="applyQuery()">
+        <input id="filterAlbum" type="text" value="*" data-i18n-placeholder="filterPlaceholder" placeholder="guitar  -vocal" oninput="applyQuery()">
       </div>
       <div class="field">
         <label for="filterStatus" data-i18n="filterStatus">Status</label>
-        <input id="filterStatus" type="text" data-i18n-placeholder="filterStatusPlaceholder" placeholder="Wartend  -fehler" oninput="applyQuery()">
+        <input id="filterStatus" type="text" value="*" data-i18n-placeholder="filterStatusPlaceholder" placeholder="Wartend  -fehler" oninput="applyQuery()">
       </div>
       <div class="field">
         <label for="sortCol" data-i18n="sortBy">Sortierung</label>
@@ -421,7 +421,7 @@ body { padding-bottom: 52px; }
         </select>
       </div>
     </div>
-    <p class="filter-hint" data-i18n="filterHint">Freier Text. Techno heißt enthalten, -techno heißt nicht enthalten. Mehrere Wörter gelten zusammen.</p>
+    <p class="filter-hint" data-i18n="filterHint">* zeigt alle. Ein leeres Feld zeigt nur leere Zellen. Techno heißt enthalten, -techno heißt nicht enthalten.</p>
     <div class="table-wrap">
       <table id="resultsTable">
         <thead>
@@ -474,7 +474,7 @@ const I18N = {
     limit: 'Limit (max. Tracks)',    reload: '↻ Aktualisieren', loadNew: 'Neue Daten laden',    hideDone: 'Fertige ignorieren beim Laden', doneBtn: 'Fertig', clearLog: '🗑 Log leeren',
     analyzeAll: 'Alle analysieren', analyzeMarked: 'Markierte analysieren', instruments: 'Instrumentanalyse', noneMarked: 'Keine Datei markiert.',
     filterGenre: 'Filter Genre', filterSub: 'Filter Subgenres', filterAlbum: 'Filter Album Artist', filterStatus: 'Filter Status',
-    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Wartend  -fehler', filterHint: 'Freier Text. Techno heißt enthalten, -techno heißt nicht enthalten. Mehrere Wörter gelten zusammen.',
+    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Wartend  -fehler', filterHint: '* zeigt alle. Ein leeres Feld zeigt nur leere Zellen. Techno heißt enthalten, -techno heißt nicht enthalten.',
     sortBy: 'Sortierung', sortDir: 'Richtung', sortNone: 'Keine', sortAsc: 'A → Z', sortDesc: 'Z → A',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Beide',
     results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
@@ -505,7 +505,7 @@ const I18N = {
     limit: 'Limit (max tracks)',    reload: '↻ Refresh', loadNew: 'Load new data',    hideDone: 'Ignore finished when loading', doneBtn: 'Finished', clearLog: '🗑 Clear log',
     analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', instruments: 'Instrument analysis', noneMarked: 'No file marked.',
     filterGenre: 'Filter genre', filterSub: 'Filter subgenres', filterAlbum: 'Filter album artist', filterStatus: 'Filter status',
-    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Waiting  -error', filterHint: 'Free text. Techno means contains, -techno means does not contain. Several words apply together.',
+    filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Waiting  -error', filterHint: '* shows all. An empty field shows only empty cells. Techno means contains, -techno means does not contain.',
     sortBy: 'Sort', sortDir: 'Direction', sortNone: 'None', sortAsc: 'A → Z', sortDesc: 'Z → A',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Both',
     results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
@@ -906,12 +906,15 @@ function cssEscape(value) {
 }
 
 function textMatches(value, query) {
-  const tokens = String(query || '').trim().split(/\s+/).filter(Boolean);
+  const raw = String(query ?? '');
+  const hay = String(value || '').trim();
+  if (!raw.trim()) return !hay;
+  const tokens = raw.trim().split(/\s+/).filter(token => token && token !== '*');
   if (!tokens.length) return true;
-  const hay = String(value || '').toLowerCase();
+  const lower = hay.toLowerCase();
   return tokens.every(token => {
-    if (token.startsWith('-') && token.length > 1) return !hay.includes(token.slice(1).toLowerCase());
-    return hay.includes(token.toLowerCase());
+    if (token.startsWith('-') && token.length > 1) return !lower.includes(token.slice(1).toLowerCase());
+    return lower.includes(token.toLowerCase());
   });
 }
 
