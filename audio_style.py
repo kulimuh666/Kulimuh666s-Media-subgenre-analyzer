@@ -190,8 +190,8 @@ def patches(bands):
 
 MAEST = ROOT / "models" / "discogs-maest-30s-pw-519l-2.onnx"
 MAEST_LABELS = ROOT / "models" / "discogs-maest-30s-pw-519l-2.json"
-MTT = ROOT / "models" / "mtt-musicnn-1.onnx"
-MTT_LABELS = ROOT / "models" / "mtt-musicnn-1.json"
+JAMENDO = ROOT / "models" / "mtg_jamendo_instrument-discogs-effnet-1.onnx"
+JAMENDO_LABELS = ROOT / "models" / "mtg_jamendo_instrument-discogs-effnet-1.json"
 MAEST_PATCH = 1876
 MAEST_HOP = 1875
 MAEST_MEAN = 2.06755686098554
@@ -286,69 +286,53 @@ def merge_ranked(*groups):
     return sorted(((score, name) for name, score in best.items()), reverse=True)
 
 
-def mtt_tags(audio):
-    classes = json.loads(MTT_LABELS.read_text(encoding="utf-8"))["classes"]
-    style = {
-        "techno", "electronic", "electric", "rock", "pop", "dance", "metal",
-        "ambient", "classical", "classic", "new age", "country", "indian",
-        "opera", "slow", "fast", "loud", "quiet", "soft", "weird", "beat", "beats",
-        "no vocal", "no vocals", "no voice",
+def instrument_tags(bands):
+    classes = json.loads(JAMENDO_LABELS.read_text(encoding="utf-8"))["classes"]
+    skip = {"beat", "computer"}
+    generic = {"drums", "synthesizer", "drummachine", "bass", "percussion", "sampler", "keyboard", "pad"}
+    drop_if = {
+        "guitar": {"electricguitar", "acousticguitar", "classicalguitar"},
+        "drums": {"drummachine"},
+        "piano": {"electricpiano"},
+        "keyboard": {"electricpiano", "piano", "organ", "rhodes"},
     }
-    bands = musicnn_mels(audio)
-    patch, hop = 187, 93
-    if bands.shape[0] < patch:
-        pad = np.zeros((patch, bands.shape[1]), dtype=np.float32)
-        pad[:bands.shape[0]] = bands
-        chunks = [pad]
-    else:
-        chunks = [bands[start:start + patch] for start in range(0, bands.shape[0] - patch + 1, hop)]
-    sess = session(MTT)
-    inp = sess.get_inputs()[0]
-    names = [o.name for o in sess.get_outputs()]
-    out_name = "activations" if "activations" in names else names[0]
+    pretty = {
+        "acousticbassguitar": "Acoustic Bass",
+        "acousticguitar": "Acoustic Guitar",
+        "classicalguitar": "Classical Guitar",
+        "electricguitar": "Electric Guitar",
+        "electricpiano": "Electric Piano",
+        "drummachine": "Drum Machine",
+        "doublebass": "Double Bass",
+        "pipeorgan": "Pipe Organ",
+    }
+    chunks = patches(bands)
+    eff = session(MODEL)
+    embeds = []
+    for start in range(0, len(chunks), 16):
+        raw = eff.run(["embeddings"], {eff.get_inputs()[0].name: chunks[start:start + 16].astype(np.float32)})[0]
+        embeds.append(raw.reshape(raw.shape[0], -1)[:, :1280])
+    emb = np.concatenate(embeds, axis=0)
+    head = session(JAMENDO)
     parts = []
-    for start in range(0, len(chunks), 32):
-        feed = np.stack(chunks[start:start + 32]).astype(np.float32)
-        raw = sess.run([out_name], {inp.name: feed})[0]
+    for start in range(0, len(emb), 16):
+        raw = head.run(["activations"], {head.get_inputs()[0].name: emb[start:start + 16]})[0]
         parts.append(raw.reshape(raw.shape[0], -1)[:, :len(classes)])
     mat = np.concatenate(parts, axis=0)
     keep = max(1, int(np.ceil(mat.shape[0] * 0.25)))
     robust = np.partition(mat, mat.shape[0] - keep, axis=0)[-keep:].mean(axis=0)
     ranked = sorted(
-        ((float(robust[i]), style_name(classes[i])) for i in range(min(len(classes), robust.size))),
+        ((float(robust[i]), classes[i]) for i in range(min(len(classes), robust.size)) if classes[i] not in skip),
         reverse=True,
     )
-    if len(ranked) >= 5 and (ranked[0][0] - ranked[4][0]) < 0.015:
-        return ""
-    instruments = [(score, name) for score, name in ranked if name.lower() not in style]
-    if not instruments:
-        return ""
-    top = instruments[0][0]
-    floor = max(0.08, top * 0.45)
-    chosen = [(score, name) for score, name in instruments if score >= floor][:8]
-    if not chosen:
-        chosen = instruments[:4]
-    names_out = []
-    used = set()
-    drop_groups = [
-        {"female vocal", "female voice", "female", "woman"},
-        {"male vocal", "male voice", "male", "man"},
-        {"vocal", "vocals", "voice", "singing"},
-        {"no vocal", "no vocals", "no voice"},
-        {"choir", "choral"},
-    ]
-    for score, name in chosen:
-        key = name.lower()
-        if key in used or key in style:
-            continue
-        group = next((g for g in drop_groups if key in g), None)
-        if group and used & group:
-            continue
-        used.add(key)
-        if group:
-            used |= group
-        names_out.append(name)
-    return ", ".join(names_out)
+    present = {name for score, name in ranked if score >= 0.2}
+    filtered = [(score, name) for score, name in ranked if not (drop_if.get(name) and present & drop_if[name])]
+    distinctive = [(score, name) for score, name in filtered if name not in generic and score >= 0.25]
+    chosen = distinctive[:6] or [(score, name) for score, name in filtered if name in generic and score >= 0.35][:3]
+    labels = []
+    for _, name in chosen:
+        labels.append(pretty[name] if name in pretty else name[:1].upper() + name[1:])
+    return ", ".join(labels)
 
 
 def predict(path, model="effnet"):
@@ -362,14 +346,14 @@ def predict(path, model="effnet"):
         needed.append(MAEST)
         needed.append(MAEST_LABELS)
     if model in ("effnet", "maest", "both", "mtt"):
-        needed.extend([MTT, MTT_LABELS])
+        needed.extend([MODEL, JAMENDO, JAMENDO_LABELS])
     missing = [p.name for p in needed if not p.is_file()]
     if missing:
         raise FileNotFoundError("audio model missing: " + ", ".join(missing))
     audio = load_audio(path)
-    if model == "mtt":
-        return {"subgenres": "", "einordnung": "", "jahr": None, "user1": mtt_tags(audio), "model": "mtt"}
     bands = mels(audio)
+    if model == "mtt":
+        return {"subgenres": "", "einordnung": "", "jahr": None, "user1": instrument_tags(bands), "model": "jamendo"}
     groups = []
     if model in ("effnet", "both"):
         groups.append(effnet_ranked(bands))
@@ -381,7 +365,7 @@ def predict(path, model="effnet"):
         "subgenres": " / ".join(kept),
         "einordnung": "",
         "jahr": None,
-        "user1": mtt_tags(audio),
+        "user1": instrument_tags(bands),
         "model": model,
         "scores": [{"name": name, "score": round(score, 3)} for score, name in ranked[:8]],
     }

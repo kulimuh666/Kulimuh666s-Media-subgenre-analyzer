@@ -52,7 +52,7 @@ CATALOG = {
         ],
     },
     "audio": {
-        "label": "Discogs-EffNet and MTT-MusicNN",
+        "label": "Discogs-EffNet, MAEST and Jamendo instruments",
         "files": [
             {
                 "url": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx",
@@ -63,12 +63,12 @@ CATALOG = {
                 "name": "discogs-effnet-bs64-1.json",
             },
             {
-                "url": "https://essentia.upf.edu/models/autotagging/mtt/mtt-musicnn-1.onnx",
-                "name": "mtt-musicnn-1.onnx",
+                "url": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.onnx",
+                "name": "mtg_jamendo_instrument-discogs-effnet-1.onnx",
             },
             {
-                "url": "https://essentia.upf.edu/models/autotagging/mtt/mtt-musicnn-1.json",
-                "name": "mtt-musicnn-1.json",
+                "url": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json",
+                "name": "mtg_jamendo_instrument-discogs-effnet-1.json",
             },
             {
                 "url": "https://essentia.upf.edu/models/feature-extractors/maest/discogs-maest-30s-pw-519l-2.onnx",

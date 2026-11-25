@@ -4,7 +4,7 @@
 
 ## Deutsch
 
-Schreibt Subgenres und das Jahr in Audio-Dateien. Die Dateien bleiben auf dem PC, der `start_gui.bat` startet. Hermes liefert nur die Einschätzung. Der Key in den Einstellungen ist der Hermes-Key. Instrumente gehen nach Album Artist.
+Schreibt Subgenres und das Jahr in Audio-Dateien. Die Dateien bleiben auf dem PC, der `start_gui.bat` startet. Hermes liefert nur die Einschätzung. Der Key in den Einstellungen ist der Hermes-Key. Instrumente gehen nach Album Artist und kommen von Jamendo, nicht von MusicNN.
 
 In jeder Zeile: EffNet, MAEST, Beide, API und Fertig. Instrumentanalyse hört alle sichtbaren Dateien und schreibt die Instrumente nach Album Artist. Über der Liste filtern Genre, Subgenres, Album Artist und Status mit freiem Text: Techno enthält, -techno schließt aus. Sortierung A bis Z oder Z bis A, auch Status.
 
