@@ -6,7 +6,7 @@
 
 Schreibt Subgenres und das Jahr in Audio-Dateien. Die Dateien bleiben auf dem PC, der `start_gui.bat` startet. Hermes liefert nur die Einschätzung. Der Key in den Einstellungen ist der Hermes-Key. Instrumente gehen nach Album Artist.
 
-In jeder Zeile: EffNet, MAEST, Beide, API und Fertig. Instrumentanalyse hört alle sichtbaren Dateien und schreibt die Instrumente nach Album Artist.
+In jeder Zeile: EffNet, MAEST, Beide, API und Fertig. Instrumentanalyse hört alle sichtbaren Dateien und schreibt die Instrumente nach Album Artist. Über der Liste filtern Genre, Subgenres und Album Artist mit freiem Text: Techno enthält, -techno schließt aus. Sortierung A bis Z oder Z bis A.
 
 `config.example.json` nach `config.json` kopieren und Key sowie Zielordner eintragen. Modelle liegen lokal in `models/` und sind nicht im Zip.
 
