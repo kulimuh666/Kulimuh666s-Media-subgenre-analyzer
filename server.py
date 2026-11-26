@@ -66,6 +66,33 @@ logger = _setup_logger()
 
 # ── Config Manager (inline, from config_manager.py) ─────────────────────
 
+# ── Tag Mapping ────────────────────────────────────────────────────
+# Standard ID3v2 frames that may be used for subgenres / instruments.
+# Order here controls the settings dropdown; custom tags use TXXX.
+TAG_OPTIONS = [
+    ("composer", "TCOM", "Composer"),
+    ("genre", "TCON", "Genre"),
+    ("artist", "TPE1", "Artist"),
+    ("albumartist", "TPE2", "Album Artist"),
+    ("conductor", "TPE3", "Conductor"),
+    ("title", "TIT2", "Title"),
+    ("group", "TIT1", "Gruppierung / Werk"),
+    ("album", "TALB", "Album"),
+    ("custom", "TXXX", "Eigener Tag (TXXX)"),
+]
+TAG_KEYS = {k for k, _, _ in TAG_OPTIONS}
+TAG_FRAME_MAP = {k: f for k, f, _ in TAG_OPTIONS if k != "custom"}
+
+# M4A has no arbitrary text frame; map standard keys to iTunes-style keys.
+M4A_TAG_KEYS = {
+    "composer": "\xa9wrt",
+    "genre": "\xa9gen",
+    "artist": "\xa9ART",
+    "albumartist": "aART",
+    "title": "\xa9nam",
+    "album": "\xa9alb",
+}
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "hermes_url": "http://127.0.0.1:8642/v1/chat/completions",
     "api_key": "",
@@ -76,10 +103,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "timeout": 1800,
     "analyze_mode": "web",
     "audio_model": "effnet",
-    "extra_tag": "albumartist",
     "llm_backend": "hermes",
     "summarize": False,
     "python_path": "",
+    "subgenre_tag": "composer",
+    "subgenre_tag_custom": "",
+    "instrument_tag": "albumartist",
+    "instrument_tag_custom": "",
 }
 
 _config_lock = threading.Lock()
@@ -105,7 +135,12 @@ def _load_config_raw(path: Path | None = None) -> Dict[str, Any]:
         merged["analyze_mode"] = "web"
     if merged.get("audio_model") not in ("effnet", "maest", "both"):
         merged["audio_model"] = "effnet"
-    merged["extra_tag"] = "albumartist"
+    if merged.get("subgenre_tag") not in TAG_KEYS:
+        merged["subgenre_tag"] = "composer"
+    if merged.get("instrument_tag") not in TAG_KEYS:
+        merged["instrument_tag"] = "albumartist"
+    merged["subgenre_tag_custom"] = str(merged.get("subgenre_tag_custom") or "").strip()[:64]
+    merged["instrument_tag_custom"] = str(merged.get("instrument_tag_custom") or "").strip()[:64]
     if merged.get("llm_backend") not in ("hermes", "local"):
         merged["llm_backend"] = "hermes"
     merged["summarize"] = bool(merged.get("summarize", False))
@@ -391,6 +426,7 @@ def read_tags(filepath: str) -> Dict[str, Any]:
         'date': '',
         'user1': '',
         'albumartist': '',
+        'group': '',
         'filename': Path(filepath).name,
         'filepath': filepath,
     }
@@ -433,6 +469,15 @@ def read_tags(filepath: str) -> Dict[str, Any]:
             except (IndexError, KeyError, TypeError):
                 pass
 
+        if suffix == '.mp3':
+            try:
+                from mutagen.id3 import ID3 as _RawID3
+                raw_id3 = _RawID3(str(p))
+                frame = raw_id3.get('TIT1')
+                if frame and frame.text:
+                    tags['group'] = str(frame.text[0]).strip()
+            except Exception:
+                pass
         if suffix == '.mp3' and not (tags['artist'] and tags['title']):
             try:
                 from mutagen.id3 import ID3
@@ -457,6 +502,7 @@ def read_tags(filepath: str) -> Dict[str, Any]:
     user1, album = read_extra_tags(filepath)
     tags['user1'] = user1
     tags['albumartist'] = album
+    tags['composer'] = read_configured_tag(filepath, "subgenre")
     return tags
 
 
@@ -661,91 +707,8 @@ def join_tags(*chunks: str) -> str:
 
 
 def write_subgenre_tag(filepath: str, subgenres: str) -> tuple[bool, Optional[str]]:
-    """Write subgenres to the composer tag of an audio file."""
-    subgenres = join_tags(subgenres)
-    if not mutagen_ready():
-        return False, "mutagen not available"
-
-    try:
-        p = Path(filepath)
-        suffix = p.suffix.lower()
-
-        if suffix == '.mp3':
-            # Try multiple write strategies for MP3
-            audio = None
-            try:
-                audio = MP3(str(p), ID3=EasyID3)
-            except Exception:
-                pass
-
-            if not audio:
-                try:
-                    raw = MP3(str(p))
-                    if not raw.tags:
-                        raw.add_tags()
-                    raw.save()
-                    audio = MP3(str(p), ID3=EasyID3)
-                except Exception:
-                    pass
-
-            if not audio:
-                try:
-                    from mutagen.id3 import ID3, TCOM
-                    tags = ID3()
-                    tags.add(TCOM(encoding=3, text=[subgenres]))
-                    tags.save(str(p))
-                    return True, None
-                except Exception as e:
-                    return False, str(e)
-
-            if not audio:
-                try:
-                    tags = EasyID3(str(p)) if p.exists() else EasyID3()
-                    tags['composer'] = subgenres
-                    tags.save(str(p))
-                    return True, None
-                except Exception as e:
-                    return False, str(e)
-
-            if not audio:
-                return False, "All MP3 write strategies failed"
-
-        elif suffix == '.flac' and FLAC:
-            try:
-                audio = FLAC(str(p))
-            except Exception:
-                return False, "FLAC could not be opened"
-        elif suffix in ('.m4a', '.aac', '.mp4') and M4A:
-            try:
-                audio = M4A(str(p))
-            except Exception:
-                return False, "M4A/AAC could not be opened"
-            audio['\xa9wrt'] = subgenres
-            audio.save()
-            return True, None
-        elif suffix == '.ogg' and OggVorbis:
-            try:
-                audio = OggVorbis(str(p))
-            except Exception:
-                return False, "OGG could not be opened"
-        elif suffix == '.opus' and OggOpus:
-            try:
-                audio = OggOpus(str(p))
-            except Exception:
-                return False, "OPUS could not be opened"
-        else:
-            return False, "Unsupported format"
-
-        if not audio:
-            return False, "Could not create audio object"
-
-        audio['composer'] = subgenres
-        audio.save()
-        return True, None
-
-    except Exception as e:
-        logger.error(f"write_subgenre_tag error for {filepath}: {e}")
-        return False, str(e)
+    """Write subgenres to the configured subgenre tag of the file."""
+    return write_configured_tag(filepath, join_tags(subgenres), "subgenre")
 
 
 def write_year_tag(filepath: str, year: Any) -> tuple[bool, Optional[str]]:
@@ -845,10 +808,213 @@ def write_genre_tag(filepath: str, genre: str) -> tuple[bool, Optional[str]]:
         return False, str(e)
 
 
+# ── Configured subgenre / instrument tags ───────────────────────────────
+
+def configured_tag(kind: str):
+    """Return (key, custom_desc) for 'subgenre' or 'instrument'."""
+    cfg = load_config()
+    if kind == "subgenre":
+        key = str(cfg.get("subgenre_tag") or "composer").strip()
+        custom = str(cfg.get("subgenre_tag_custom") or "").strip()
+    else:
+        key = str(cfg.get("instrument_tag") or "albumartist").strip()
+        custom = str(cfg.get("instrument_tag_custom") or "").strip()
+    if key not in TAG_KEYS:
+        key = "composer" if kind == "subgenre" else "albumartist"
+    if key == "custom" and not custom:
+        custom = "Subgenres" if kind == "subgenre" else "Instruments"
+    return key, custom
+
+
+def configured_tag_label(kind: str) -> str:
+    key, custom = configured_tag(kind)
+    if key == "custom":
+        return f"TXXX – {custom}"
+    for k, _, label in TAG_OPTIONS:
+        if k == key:
+            return f"{TAG_FRAME_MAP[k]} – {label}"
+    return key
+
+
+def read_configured_tag(filepath: str, kind: str) -> str:
+    """Read the file's configured subgenre/instrument tag."""
+    key, custom = configured_tag(kind)
+    try:
+        p = Path(filepath)
+        suffix = p.suffix.lower()
+        if suffix == ".mp3" and MP3:
+            if key == "custom":
+                from mutagen.id3 import ID3, ID3NoHeaderError
+                try:
+                    raw = ID3(str(p))
+                except ID3NoHeaderError:
+                    return ""
+                for frame in raw.getall("TXXX"):
+                    if frame.desc == custom and frame.text:
+                        return str(frame.text[0]).strip()
+                return ""
+            # Read via raw ID3 with the frame map (supports TIT1/TIT2/etc. uniformly);
+            # EasyID3 does not know TIT1 and would silently return empty.
+            try:
+                from mutagen.id3 import ID3, ID3NoHeaderError
+                try:
+                    raw = ID3(str(p))
+                except ID3NoHeaderError:
+                    return ""
+                frame_name = TAG_FRAME_MAP.get(key)
+                if not frame_name:
+                    return ""
+                for frame in raw.getall(frame_name):
+                    if frame.text:
+                        return str(frame.text[0]).strip()
+                return ""
+            except Exception:
+                return ""
+        if suffix == ".flac" and FLAC:
+            audio = FLAC(str(p))
+            stored = custom if key == "custom" else key
+            return str((audio.get(stored) or [""])[0] or "").strip()
+        if suffix == ".ogg" and OggVorbis:
+            audio = OggVorbis(str(p))
+            stored = custom if key == "custom" else key
+            return str((audio.get(stored) or [""])[0] or "").strip()
+        if suffix == ".opus" and OggOpus:
+            audio = OggOpus(str(p))
+            stored = custom if key == "custom" else key
+            return str((audio.get(stored) or [""])[0] or "").strip()
+        if suffix in (".m4a", ".aac", ".mp4") and M4A:
+            audio = M4A(str(p))
+            if key == "custom":
+                raw = audio.get("----:com.apple.iTunes:" + custom)
+                if raw:
+                    return str(raw[0].decode("utf-8", "replace") if isinstance(raw[0], bytes) else raw[0]).strip()
+                return ""
+            stored = M4A_TAG_KEYS.get(key)
+            if not stored:
+                return ""
+            return str((audio.get(stored) or [""])[0] or "").strip()
+        return ""
+    except Exception as exc:
+        logger.warning(f"read_configured_tag {filepath}: {exc}")
+        return ""
+
+
+def write_configured_tag(filepath: str, text: str, kind: str) -> tuple[bool, Optional[str]]:
+    """Write subgenres or instruments to the configured tag of the file."""
+    key, custom = configured_tag(kind)
+    text = str(text or "").strip()
+    if not mutagen_ready():
+        return False, "mutagen not available"
+    try:
+        p = Path(filepath)
+        suffix = p.suffix.lower()
+        if suffix == ".mp3":
+            if key == "custom":
+                from mutagen.id3 import ID3, ID3NoHeaderError, TXXX
+                try:
+                    try:
+                        tags = ID3(str(p))
+                    except ID3NoHeaderError:
+                        tags = ID3()
+                    tags.delall("TXXX:" + custom)
+                    if text:
+                        tags.add(TXXX(encoding=3, desc=custom, text=[text]))
+                    tags.save(str(p))
+                    return True, None
+                except Exception as e:
+                    return False, str(e)
+
+            # Standard: try EasyID3 first, then raw ID3
+            audio = None
+            try:
+                audio = MP3(str(p), ID3=EasyID3)
+            except Exception:
+                pass
+            if not audio:
+                try:
+                    raw = MP3(str(p))
+                    if not raw.tags:
+                        raw.add_tags()
+                    raw.save()
+                    audio = MP3(str(p), ID3=EasyID3)
+                except Exception:
+                    pass
+            if audio:
+                try:
+                    audio[key] = text
+                    audio.save()
+                    return True, None
+                except Exception:
+                    audio = None
+            if not audio:
+                try:
+                    import mutagen.id3 as id3_mod
+                    from mutagen.id3 import ID3, ID3NoHeaderError
+                    try:
+                        tags = ID3(str(p))
+                    except ID3NoHeaderError:
+                        tags = ID3()
+                    name = TAG_FRAME_MAP[key]
+                    frame_cls = getattr(id3_mod, name)
+                    tags.delall(name)
+                    if text:
+                        tags.add(frame_cls(encoding=3, text=[text]))
+                    tags.save(str(p))
+                    return True, None
+                except Exception as e:
+                    return False, str(e)
+            return False, "All MP3 write strategies failed"
+        if suffix == ".flac" and FLAC:
+            try:
+                audio = FLAC(str(p))
+            except Exception:
+                return False, "FLAC could not be opened"
+        elif suffix == ".ogg" and OggVorbis:
+            try:
+                audio = OggVorbis(str(p))
+            except Exception:
+                return False, "OGG could not be opened"
+        elif suffix == ".opus" and OggOpus:
+            try:
+                audio = OggOpus(str(p))
+            except Exception:
+                return False, "OPUS could not be opened"
+        elif suffix in (".m4a", ".aac", ".mp4") and M4A:
+            try:
+                audio = M4A(str(p))
+            except Exception:
+                return False, "M4A/AAC could not be opened"
+        else:
+            return False, "Unsupported format"
+
+        if suffix in (".m4a", ".aac", ".mp4"):
+            if key == "custom":
+                if text:
+                    audio["----:com.apple.iTunes:" + custom] = [text.encode("utf-8")]
+                else:
+                    audio.pop("----:com.apple.iTunes:" + custom, None)
+                audio.save()
+                return True, None
+            stored = M4A_TAG_KEYS.get(key)
+            if not stored:
+                return False, f"M4A unterstützt Tag {key} nicht"
+        else:
+            stored = custom if key == "custom" else key
+
+        if text:
+            audio[stored] = [text]
+        else:
+            audio.pop(stored, None)
+        audio.save()
+        return True, None
+    except Exception as e:
+        logger.error(f"write_configured_tag {filepath}: {e}")
+        return False, str(e)
+
+
 def read_extra_tags(filepath: str) -> tuple[str, str]:
-    """User1 and album artist live in the file. VirtualDJ does not have to be running."""
+    """User1 stays for legacy files; the instruments column reads the configured tag."""
     user1 = ""
-    album = ""
     try:
         p = Path(filepath)
         suffix = p.suffix.lower()
@@ -861,30 +1027,20 @@ def read_extra_tags(filepath: str) -> tuple[str, str]:
             frame = raw.get("TXXX:User1")
             if frame and frame.text:
                 user1 = str(frame.text[0]).strip()
-            frame = raw.get("TPE2")
-            if frame and frame.text:
-                album = str(frame.text[0]).strip()
         elif suffix == ".flac" and FLAC:
-            audio = FLAC(str(p))
-            user1 = str((audio.get("User1") or [""])[0] or "").strip()
-            album = str((audio.get("albumartist") or [""])[0] or "").strip()
+            user1 = str((FLAC(str(p)).get("User1") or [""])[0] or "").strip()
         elif suffix in (".ogg",) and OggVorbis:
-            audio = OggVorbis(str(p))
-            user1 = str((audio.get("User1") or [""])[0] or "").strip()
-            album = str((audio.get("albumartist") or [""])[0] or "").strip()
+            user1 = str((OggVorbis(str(p)).get("User1") or [""])[0] or "").strip()
         elif suffix == ".opus" and OggOpus:
-            audio = OggOpus(str(p))
-            user1 = str((audio.get("User1") or [""])[0] or "").strip()
-            album = str((audio.get("albumartist") or [""])[0] or "").strip()
+            user1 = str((OggOpus(str(p)).get("User1") or [""])[0] or "").strip()
         elif suffix in (".m4a", ".aac", ".mp4") and M4A:
             audio = M4A(str(p))
-            album = str((audio.get("aART") or [""])[0] or "").strip()
             raw = audio.get("----:com.apple.iTunes:User1")
             if raw:
                 user1 = raw[0].decode("utf-8", "replace").strip()
     except Exception as exc:
         logger.warning(f"read_extra_tags {filepath}: {exc}")
-    return user1, album
+    return user1, read_configured_tag(filepath, "instrument")
 
 
 def write_user1_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
@@ -997,43 +1153,8 @@ def write_vdj_user1(filepath: str, text: str) -> tuple[bool, Optional[str]]:
 
 
 def write_albumartist_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
-    try:
-        p = Path(filepath)
-        suffix = p.suffix.lower()
-        if suffix == ".mp3":
-            from mutagen.id3 import ID3, ID3NoHeaderError, TPE2
-            try:
-                tags = ID3(str(p))
-            except ID3NoHeaderError:
-                tags = ID3()
-            tags.delall("TPE2")
-            if text:
-                tags.add(TPE2(encoding=3, text=[text]))
-            tags.save(str(p))
-            return True, None
-        if suffix == ".flac" and FLAC:
-            audio = FLAC(str(p))
-            key = "albumartist"
-        elif suffix == ".ogg" and OggVorbis:
-            audio = OggVorbis(str(p))
-            key = "albumartist"
-        elif suffix == ".opus" and OggOpus:
-            audio = OggOpus(str(p))
-            key = "albumartist"
-        elif suffix in (".m4a", ".aac", ".mp4") and M4A:
-            audio = M4A(str(p))
-            key = "aART"
-        else:
-            return False, "unsupported format"
-        if text:
-            audio[key] = [text]
-        else:
-            audio.pop(key, None)
-        audio.save()
-        return True, None
-    except Exception as exc:
-        logger.error(f"write_albumartist_tag {filepath}: {exc}")
-        return False, str(exc)
+    """Legacy alias — instruments are written to the configured instrument tag (see configured_tag)."""
+    return write_configured_tag(filepath, text, "instrument")
 
 
 def write_composer_tag(filepath: str, text: str) -> tuple[bool, Optional[str]]:
@@ -1415,8 +1536,9 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
         elif heard.get("error"):
             logger.warning(f"Instrumente {Path(filepath).name}: {heard['error']}")
         if success and extra_value:
-            extra_ok, extra_err = write_albumartist_tag(filepath, extra_value)
-            extra_note = f" | Album Artist {extra_value}" if extra_ok else f" | Album Artist nicht geschrieben: {extra_err}"
+            extra_ok, extra_err = write_configured_tag(filepath, extra_value, "instrument")
+            tag_label = configured_tag_label("instrument")
+            extra_note = f" | {tag_label} {extra_value}" if extra_ok else f" | {tag_label} nicht geschrieben: {extra_err}"
         if success:
             set_status(filepath, 'success', subgenres=subgenres, jahr=jahr or 0, user1=extra_value)
             logger.info(f"Success: {filepath} → {subgenres}{year_note}{extra_note}")
@@ -1432,7 +1554,30 @@ def analyze_single_track(filepath: str, dry_run: bool, force: bool = False, mode
         return {'status': 'success', 'display': display, 'subgenres': subgenres, 'jahr': jahr}
 
 
-def update_from_github() -> Dict[str, Any]:
+def analyze_single_instruments(filepath: str) -> Dict[str, Any]:
+    """Hear instruments of one track and write them to the configured instrument tag."""
+    display = Path(filepath).name
+    tags = read_tags(filepath)
+    genre = tags.get('genre', '') or ''
+    set_status(filepath, 'analyzing', genre=genre, artist=tags.get('artist', '') or '', title=tags.get('title', '') or '')
+    heard = recognize_audio(filepath, "mtt") or {}
+    text = (heard.get("user1") or "").strip()
+    if not text:
+        err = heard.get("error") or "Instrumente nicht unterscheidbar"
+        set_status(filepath, 'error', error=err)
+        logger.error(f"Instrumente: {filepath}: {err}")
+        return {'status': 'error', 'display': display, 'reason': err}
+    ok, err = write_configured_tag(filepath, text, "instrument")
+    if ok:
+        set_status(filepath, 'success', user1=text)
+        logger.info(f"Instrumente: {filepath} → {text}")
+        return {'status': 'success', 'display': display, 'extra': text, 'extra_field': 'albumartist'}
+    set_status(filepath, 'error', error=err or f"{configured_tag_label('instrument')} nicht geschrieben")
+    logger.error(f"Instrumente: {filepath}: {err}")
+    return {'status': 'error', 'display': display, 'reason': err or "Instrumente nicht geschrieben"}
+
+
+def latest_release() -> Dict[str, Any]:
     repo = "kulimuh666/Kulimuh666s-Media-subgenre-analyzer"
     api = f"https://api.github.com/repos/{repo}/releases/latest"
     headers = {"User-Agent": "Kulimuh666-Media-Subgenre-Analyzer", "Accept": "application/vnd.github+json"}
@@ -1446,9 +1591,30 @@ def update_from_github() -> Dict[str, Any]:
     remote = int(re.sub(r"\D", "", tag) or "0")
     local_text = (PLUGIN_DIR / "VERSION").read_text(encoding="utf-8").strip() if (PLUGIN_DIR / "VERSION").is_file() else "0"
     local = int(re.sub(r"\D", "", local_text) or "0")
-    if remote <= local:
-        shown = f"V.{local:04d}"
-        return {"ok": True, "current": True, "version": shown, "message": f"Schon die neueste Version {shown}."}
+    return {"ok": True, "tag": tag, "remote": remote, "local": local, "current": remote <= local, "release": release}
+
+
+def check_update_available() -> Dict[str, Any]:
+    """Check for a newer GitHub release without applying it."""
+    result = latest_release()
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error") or "Check failed"}
+    if result["current"]:
+        return {"ok": True, "current": True, "version": f"V.{result['local']:04d}", "remote": result["tag"], "message": f"Schon die neueste Version {result['tag']}."}
+    return {"ok": True, "current": False, "version": f"V.{result['local']:04d}", "remote": result["tag"], "message": f"Neue Version verfügbar: {result['tag']}"}
+
+
+def update_from_github() -> Dict[str, Any]:
+    latest = latest_release()
+    if not latest.get("ok"):
+        return {"ok": False, "error": latest.get("error") or "Check failed"}
+    release = latest.get("release") or {}
+    tag = latest.get("tag") or ""
+    remote = latest.get("remote") or 0
+    local = latest.get("local") or 0
+    if latest.get("current"):
+        return {"ok": True, "current": True, "version": f"V.{local:04d}", "message": f"Schon die neueste Version V.{local:04d}."}
+    repo = "kulimuh666/Kulimuh666s-Media-subgenre-analyzer"
     zip_url = ""
     prefix = f"https://github.com/{repo}/releases/download/"
     for asset in release.get("assets") or []:
@@ -1527,34 +1693,8 @@ def probe_hermes(url: str, key: str) -> Dict[str, Any]:
     return {"ok": True, "status": status, "detail": detail or "Antwort ohne Text"}
 
 
-def file_has_genre(filepath: str) -> bool:
-    tags = read_tags(filepath)
-    return bool((tags.get('genre') or '').strip())
-
-
-def file_is_filled(filepath: str) -> bool:
-    tags = read_tags(filepath)
-    return bool((tags.get('genre') or '').strip() or (tags.get('composer') or '').strip())
-
-
-def load_done() -> set:
-    path = PLUGIN_DIR / "done.json"
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return set()
-    if not isinstance(data, list):
-        return set()
-    return {str(item) for item in data if item}
-
-
-def save_done(paths: set) -> None:
-    path = PLUGIN_DIR / "done.json"
-    path.write_text(json.dumps(sorted(paths), ensure_ascii=False, indent=2), encoding="utf-8")
-
-
 def run_instruments(files: List[str]):
-    """Hear instruments and write them to Album Artist. Does not touch genre or composer."""
+    """Hear instruments and write them to the configured instrument tag. Does not touch genre or composer."""
     set_analyzing(True)
     audio_files = [fp for fp in files if fp and Path(fp).is_file()]
     with _state_lock:
@@ -1574,18 +1714,18 @@ def run_instruments(files: List[str]):
         heard = recognize_audio(fp, "mtt") or {}
         text = (heard.get("user1") or "").strip()
         if text:
-            ok, err = write_albumartist_tag(fp, text)
+            ok, err = write_configured_tag(fp, text, "instrument")
             if ok:
                 set_status(fp, "success", user1=text)
                 logger.info(f"Instrumente: {fp} → {text}")
             else:
-                set_status(fp, "error", error=err or "Album Artist nicht geschrieben")
+                set_status(fp, "error", error=err or f"{configured_tag_label('instrument')} nicht geschrieben")
         else:
             set_status(fp, "error", error=heard.get("error") or "Instrumente nicht unterscheidbar")
     set_analyzing(False)
 
 
-def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = None, hide_done: bool = False, files: Optional[List[str]] = None):
+def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = None, files: Optional[List[str]] = None):
     """Run analysis on all tracks in target_dir (called from background thread)."""
     global _state_data
 
@@ -1605,11 +1745,6 @@ def run_analysis(target_dir: str, dry_run: bool = False, limit: Optional[int] = 
         logger.info(f"No audio files found in {target_dir}")
         return
 
-    if not files and hide_done:
-        done = load_done()
-        audio_files = [fp for fp in audio_files if fp not in done and not file_is_filled(fp)]
-
-    # Apply limit after finished files are excluded, so the cap is not filled by them.
     if not files and limit and limit > 0:
         audio_files = audio_files[:limit]
 
@@ -1836,6 +1971,10 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._send_json(llm_local.status())
         elif path == '/api/audio':
             self._handle_get_audio(params)
+        elif path == '/api/check-update':
+            result = check_update_available()
+            logger.info(f"Check update: {result.get('message') or result.get('error') or ''}")
+            self._send_json(result, 200 if result.get("ok") else 400)
         else:
             self._send_json({"error": "Not found", "endpoints": [
                 "GET /health",
@@ -1872,9 +2011,6 @@ class VDJHandler(BaseHTTPRequestHandler):
             cap = int(params.get('limit', ['0'])[0] or 0)
         except ValueError:
             cap = 0
-        hide_done = params.get('hide_done', ['0'])[0] in ('1', 'true')
-        done = load_done() if hide_done else set()
-
         after = params.get('after', [''])[0] or ''
         empty_only = params.get('empty_only', ['0'])[0] in ('1', 'true')
         passed_after = not after
@@ -1894,8 +2030,6 @@ class VDJHandler(BaseHTTPRequestHandler):
             genre = (tags.get('genre') or '').strip()
             if genre:
                 complete += 1
-            if hide_done and (fp in done or genre or composer):
-                continue
             if empty_only and (genre or composer):
                 continue
             support_error = tag_support(fp)
@@ -1909,6 +2043,7 @@ class VDJHandler(BaseHTTPRequestHandler):
                     "composer": composer,
                     "user1": tags.get("user1") or "",
                     "albumartist": tags.get("albumartist") or "",
+                    "group": tags.get("group") or "",
                     "jahr": year,
                     "status": "unsupported",
                     "error": support_error,
@@ -1925,6 +2060,7 @@ class VDJHandler(BaseHTTPRequestHandler):
                 "composer": composer,
                 "user1": tags.get("user1") or "",
                 "albumartist": tags.get("albumartist") or "",
+                "group": tags.get("group") or "",
                 "jahr": year,
                 "status": "skipped" if (composer and year) else "pending",
             })
@@ -2036,8 +2172,6 @@ class VDJHandler(BaseHTTPRequestHandler):
             self._handle_update()
         elif path == '/api/test-api':
             self._handle_test_api()
-        elif path == '/api/done':
-            self._handle_done()
         elif path == '/api/reveal':
             self._handle_reveal()
         elif path == '/api/row':
@@ -2235,10 +2369,15 @@ class VDJHandler(BaseHTTPRequestHandler):
         if mode in ("effnet", "maest", "both"):
             model = mode
             mode = "audio"
-        elif mode not in ("api", "local", "audio"):
+        elif mode != "instruments" and mode not in ("api", "local", "audio"):
             mode = "api"
         if not fp or not Path(fp).is_file():
             self._send_json({"error": "file not found"}, 404)
+            return
+        if mode == "instruments":
+            result = analyze_single_instruments(fp)
+            code = 200 if result.get("status") == "success" else 500
+            self._send_json(result, code)
             return
         result = analyze_single_track(fp, False, force=True, mode=mode, audio_model=model)
         if result.get("status") == "busy":
@@ -2262,19 +2401,6 @@ class VDJHandler(BaseHTTPRequestHandler):
         result = probe_hermes(url, key)
         logger.info(f"API test {url} ok={result.get('ok')} {result.get('error') or result.get('detail') or ''}")
         self._send_json(result, 200 if result.get("ok") else 400)
-
-    def _handle_done(self):
-        body = self._parse_json_body()
-        if body is None:
-            return
-        fp = body.get("filepath") or ""
-        if not fp:
-            self._send_json({"error": "filepath missing"}, 400)
-            return
-        done = load_done()
-        done.add(fp)
-        save_done(done)
-        self._send_json({"ok": True, "filepath": fp})
 
     def _handle_reveal(self):
         """Open Explorer with this file selected."""
@@ -2336,6 +2462,14 @@ class VDJHandler(BaseHTTPRequestHandler):
                 cfg["llm_backend"] = value if value in ("hermes", "local") else "hermes"
             elif key == "summarize":
                 cfg["summarize"] = bool(value)
+            elif key == "subgenre_tag":
+                cfg["subgenre_tag"] = value if value in TAG_KEYS else "composer"
+            elif key == "instrument_tag":
+                cfg["instrument_tag"] = value if value in TAG_KEYS else "albumartist"
+            elif key == "subgenre_tag_custom":
+                cfg["subgenre_tag_custom"] = str(value or "").strip()[:64]
+            elif key == "instrument_tag_custom":
+                cfg["instrument_tag_custom"] = str(value or "").strip()[:64]
             else:
                 cfg[key] = value
 
@@ -2374,7 +2508,6 @@ class VDJHandler(BaseHTTPRequestHandler):
             return
 
         # Start analysis in background thread
-        hide_done = bool(body.get("hide_done", False))
         picked = body.get("files") if isinstance(body.get("files"), list) else None
         forced = body.get("mode")
         forced_model = body.get("audio_model")
@@ -2383,7 +2516,7 @@ class VDJHandler(BaseHTTPRequestHandler):
         _job_model = forced_model if forced_model in ("effnet", "maest", "both") else None
         t = threading.Thread(
             target=run_analysis,
-            args=(target_dir, dry_run, limit, hide_done, picked),
+            args=(target_dir, dry_run, limit, picked),
             daemon=True,
         )
         t.start()
@@ -2397,6 +2530,41 @@ class VDJHandler(BaseHTTPRequestHandler):
 
 
 # ── Main / Entry Point ────────────────────────────────────────────────
+
+def _kill_stale_servers() -> None:
+    """Close already-running servers on this port before binding.
+
+    Start jobs and stale instances from earlier sessions can hold the port and
+    win the bind. The newest launch must win, so old PIDs are stopped first.
+    """
+    if os.name != "nt":
+        return
+    try:
+        out = subprocess.run(
+            ["netstat", "-ano"], capture_output=True, text=True, errors="replace", timeout=10
+        ).stdout or ""
+    except Exception:
+        return
+    pids = set()
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 5 and f":{SERVER_PORT}" in parts[1] and (parts[3].upper().startswith("ABH") or parts[3].upper() == "LISTENING"):
+            try:
+                pids.add(int(parts[4]))
+            except ValueError:
+                pass
+    me = os.getpid()
+    for pid in sorted(pids):
+        if pid == me:
+            continue
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(pid), "/F"], capture_output=True, timeout=10
+            )
+            print(f"Gestoppte alte Server-Instance (PID {pid})")
+        except Exception:
+            continue
+
 
 def prepare_runtime() -> None:
     print("Pruefe Abhaengigkeiten...")
@@ -2427,6 +2595,9 @@ def main():
     print("Kulimuh666's Media Subgenre Analyzer Server V.0046")
     print("=" * 60)
     prepare_runtime()
+
+    # Close stale instances on this port before binding
+    _kill_stale_servers()
 
     # Start auto-save timer
     start_auto_save()

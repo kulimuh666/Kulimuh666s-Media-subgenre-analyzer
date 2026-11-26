@@ -121,8 +121,38 @@ button {
     </select>
   </div>
   <div class="field">
-    <label data-i18n="extraTag">Instrumente</label>
-    <div class="hint" data-i18n="extraHint">Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth nach Album Artist. Nicht nach User 1. Techno und Electronic kommen da nicht rein.</div>
+    <label for="subgenreTag" data-i18n="subgenreTag">Subgenres in Tag</label>
+    <select id="subgenreTag" onchange="toggleCustom('subgenre')">
+      <option value="composer">Composer (TCOM)</option>
+      <option value="genre">Genre (TCON)</option>
+      <option value="artist">Artist (TPE1)</option>
+      <option value="albumartist">Album Artist (TPE2)</option>
+      <option value="conductor">Conductor (TPE3)</option>
+      <option value="title">Title (TIT2)</option>
+      <option value="group">Gruppierung / Werk (TIT1)</option>
+      <option value="album">Album (TALB)</option>
+      <option value="custom" data-i18n="tagCustomOption">Eigener Tag (TXXX)</option>
+    </select>
+    <input id="subgenreTagCustom" type="text" maxlength="64" hidden placeholder="TXXX – Tag-Name">
+    <div class="hint" data-i18n="subgenreHint">Subgenres werden in den gewählten ID3-Frame geschrieben.</div>
+  </div>
+  <div class="field">
+    <label for="instrumentTag" data-i18n="instrumentTag">Instrumente in Tag</label>
+    <select id="instrumentTag" onchange="toggleCustom('instrument')">
+      <option value="albumartist">Album Artist (TPE2)</option>
+      <option value="composer">Composer (TCOM)</option>
+      <option value="artist">Artist (TPE1)</option>
+      <option value="conductor">Conductor (TPE3)</option>
+      <option value="title">Title (TIT2)</option>
+      <option value="group">Gruppierung / Werk (TIT1)</option>
+      <option value="album">Album (TALB)</option>
+      <option value="custom" data-i18n="tagCustomOption">Eigener Tag (TXXX)</option>
+    </select>
+    <input id="instrumentTagCustom" type="text" maxlength="64" hidden placeholder="TXXX – Tag-Name">
+    <div class="hint" data-i18n="instrumentHint">Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth hierhin. Nicht nach User 1. Techno und Electronic kommen da nicht rein.</div>
+  </div>
+  <div class="field">
+    <div class="hint" data-i18n="tagCustomHint">Eigene Tags sind nach dem Tagging-Standard möglich: MP3/ID3v2 über TXXX mit Beschreibungstext, FLAC/OGG/OPUS mit kurzem Schlüssel, M4A unter „----:com.apple.iTunes:&lt;Text&gt;".</div>
   </div>
   <div class="field">
     <label for="pythonPath" data-i18n="pythonPath">Python für Audio</label>
@@ -153,7 +183,6 @@ button {
   <p id="llmStatus" class="hint"></p>
   <div class="row">
     <button type="button" onclick="save()" data-i18n="save">Speichern</button>
-    <button type="button" onclick="updateApp()" data-i18n="updateApp">Aktualisieren</button>
     <span id="status"></span>
   </div>
 </div>
@@ -166,11 +195,12 @@ const I18N = {
     mode: 'Analyse', modeWeb: 'Websuche (Hermes sucht den Track)', modeDirect: 'Direkt (kleines LLM, nur Tags und Dateiname)',
     modeHint: 'Audio hört die Datei und schreibt Discogs-Stile in die Subgenres-Spalte. Den Genre-Tag übernimmst du danach per Hand.',
     modeAudio: 'Audio (hört die Datei)',
-    audioModel: 'Lokales Hör-Modell', extraTag: 'Instrumente',
-    extraHint: 'Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth nach Album Artist. Nicht nach User 1.',
+    audioModel: 'Lokales Hör-Modell', subgenreTag: 'Subgenres in Tag', instrumentTag: 'Instrumente in Tag',
+    tagCustomOption: 'Eigener Tag (TXXX)', tagCustomHint: 'Eigene Tags sind nach dem Tagging-Standard möglich: MP3/ID3v2 über TXXX mit Beschreibungstext, FLAC/OGG/OPUS mit kurzem Schlüssel, M4A unter „----:com.apple.iTunes:<Text>".',
+    subgenreHint: 'Subgenres werden in den gewählten ID3-Frame geschrieben.',
+    instrumentHint: 'Instrumentanalyse schreibt Gitarre, Stimme, Drums und Synth in den gewählten Tag. Nicht nach User 1. Techno und Electronic kommen da nicht rein.',
     save: 'Speichern', saved: 'Gespeichert.', fail: 'Nicht gespeichert: ',
     testApi: 'API testen', testOk: 'API ok.', testFail: 'API nicht ok: ', testNeed: 'Adresse und Key eintragen.',
-    updateApp: 'Aktualisieren', updateBusy: 'Suche die neueste GitHub-Version…',
     pythonPath: 'Python für Audio',    pythonHint: 'EffNet und MAEST brauchen Python 3.11 bis 3.14. 3.15 hat kein onnxruntime. Fehlt eins, installiert der Server 3.12.',
     findPython: 'Python suchen', pythonNone: 'Kein Python 3.11–3.14 gefunden. Der nächste Lauf installiert 3.12.',
     pythonNoOnnx: 'Python 3.15 geht nicht. Gespeichert ist ein passendes, onnxruntime kommt beim Lauf:\n',
@@ -184,11 +214,12 @@ const I18N = {
     mode: 'Analysis', modeWeb: 'Web search (Hermes looks the track up)', modeDirect: 'Direct (small LLM, tags and filename only)',
     modeHint: 'Audio listens to the file and writes Discogs styles into the subgenre column. Copy them into the genre tag yourself.',
     modeAudio: 'Audio (listens to the file)',
-    audioModel: 'Local listening model', extraTag: 'Instruments',
-    extraHint: 'Instrument analysis writes guitar, voice, drums and synth to album artist. Not to User 1.',
+    audioModel: 'Local listening model', subgenreTag: 'Subgenres in tag', instrumentTag: 'Instruments in tag',
+    tagCustomOption: 'Custom tag (TXXX)', tagCustomHint: 'Custom tags are possible under the tagging standard: MP3/ID3v2 via TXXX with a description text, FLAC/OGG/OPUS via a short key, M4A under "----:com.apple.iTunes:<text>".',
+    subgenreHint: 'Subgenres are written to the selected ID3 frame.',
+    instrumentHint: 'Instrument analysis writes guitar, voice, drums and synth to the selected tag. Not to User 1. Techno and Electronic never go here.',
     save: 'Save', saved: 'Saved.', fail: 'Not saved: ',
     testApi: 'Test API', testOk: 'API ok.', testFail: 'API not ok: ', testNeed: 'Enter the address and key.',
-    updateApp: 'Update', updateBusy: 'Looking for the latest GitHub version…',
     pythonPath: 'Python for audio',    pythonHint: 'EffNet and MAEST need Python 3.11 to 3.14. 3.15 has no onnxruntime. If none is installed, the server installs 3.12.',
     findPython: 'Find Python', pythonNone: 'No Python 3.11–3.14 found. The next run installs 3.12.',
     pythonNoOnnx: 'Python 3.15 cannot be used. A compatible one is saved; onnxruntime is installed on the next run:\n',
@@ -199,7 +230,16 @@ const I18N = {
 };
 let lang = localStorage.getItem('vdj.lang') || 'de';
 const $ = id => document.getElementById(id);
+const TAG_KEYS = ['composer', 'genre', 'artist', 'albumartist', 'conductor', 'title', 'album', 'custom'];
 function t(key) { return (I18N[lang] || I18N.de)[key] || key; }
+function toggleCustom(kind) {
+  const sel = $(kind === 'subgenre' ? 'subgenreTag' : 'instrumentTag');
+  const inp = $(kind === 'subgenre' ? 'subgenreTagCustom' : 'instrumentTagCustom');
+  if (!sel || !inp) return;
+  const show = sel.value === 'custom';
+  inp.hidden = !show;
+  if (show) inp.focus();
+}
 function applyI18n() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
@@ -223,6 +263,12 @@ async function load() {
   if (cfg.python_path) $('pythonPath').value = cfg.python_path;
   $('llmBackend').value = cfg.llm_backend === 'local' ? 'local' : 'hermes';
   $('summarize').checked = !!cfg.summarize;
+  $('subgenreTag').value = TAG_KEYS.includes(cfg.subgenre_tag) ? cfg.subgenre_tag : 'composer';
+  $('subgenreTagCustom').value = cfg.subgenre_tag_custom || '';
+  $('instrumentTag').value = TAG_KEYS.includes(cfg.instrument_tag) ? cfg.instrument_tag : 'albumartist';
+  $('instrumentTagCustom').value = cfg.instrument_tag_custom || '';
+  toggleCustom('subgenre');
+  toggleCustom('instrument');
   refreshLlm();
 }
 async function findPython() {
@@ -239,19 +285,6 @@ async function findPython() {
     await save();
     alert((best.onnx ? t('saved') + '\n' : t('pythonNoOnnx')) + lines);
   } catch (e) {
-    alert(e.message);
-  }
-}
-async function updateApp() {
-  $('status').textContent = t('updateBusy');
-  try {
-    const res = await fetch(`${TOOL}/api/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const data = await res.json().catch(() => ({}));
-    const text = data.message || data.error || (t('testFail') + res.status);
-    $('status').textContent = text;
-    alert(text);
-  } catch (e) {
-    $('status').textContent = e.message;
     alert(e.message);
   }
 }
@@ -287,7 +320,11 @@ async function save() {
         audio_model: $('audioModel').value,
         llm_backend: $('llmBackend').value,
         summarize: $('summarize').checked,
-        python_path: $('pythonPath').value.trim()
+        python_path: $('pythonPath').value.trim(),
+        subgenre_tag: $('subgenreTag').value,
+        subgenre_tag_custom: $('subgenreTagCustom').value.trim(),
+        instrument_tag: $('instrumentTag').value,
+        instrument_tag_custom: $('instrumentTagCustom').value.trim()
       })
     });
     if (!res.ok) throw new Error(res.status);

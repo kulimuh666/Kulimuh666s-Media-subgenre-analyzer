@@ -8,8 +8,11 @@
   "timeout": 1800,
   "analyze_mode": "web",
   "audio_model": "effnet",
-  "extra_tag": "albumartist",
   "llm_backend": "hermes",
   "summarize": false,
-  "python_path": ""
+  "python_path": "",
+  "subgenre_tag": "composer",
+  "subgenre_tag_custom": "",
+  "instrument_tag": "albumartist",
+  "instrument_tag_custom": ""
 }

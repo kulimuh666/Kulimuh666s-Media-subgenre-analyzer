@@ -48,9 +48,9 @@
   <h2>Workflow</h2>
   <ol>
     <li>Einstellungen, Hilfe und Versionen öffnen ein eigenes Fenster. Die Liste bleibt stehen. Zurück schließt das Fenster. Reicht der Platz nicht, gehen die Knöpfe in der Leiste und in der Zeile auf zwei Zeilen.</li>
-    <li>Aktualisieren in den Einstellungen holt die neueste Version von GitHub und ersetzt nur die Programmdateien. config.json, done.json und die Modelle bleiben. Danach das Server-Fenster schließen und start_gui.bat neu starten. API testen zeigt das Ergebnis der Hermes-Adresse in einer Meldung, ohne den Key.</li>
-    <li>Limit setzen, Aktualisieren. Fertige ignorieren beim Laden lässt Dateien weg, deren Genre oder Komponist schon Daten hat, und Tracks, die mit Fertig aus der Liste genommen wurden. Fertig entfernt die Zeile und lädt den nächsten Track. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
-    <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
+    <li>Aktualisieren in den Einstellungen holt die neueste Version von GitHub und ersetzt nur die Programmdateien. config.json und die Modelle bleiben. Danach das Server-Fenster schließen und start_gui.bat neu starten. API testen zeigt das Ergebnis der Hermes-Adresse in einer Meldung, ohne den Key.</li>
+    <li>Limit setzen, Aktualisieren. Neue Daten laden holt die nächsten Tracks, bei denen Genre und Komponist leer sind.</li>
+    <li>EffNet, MAEST und Beide stehen in der Zeile und hören diese eine Datei, auch wenn Subgenres schon da sind. API bleibt daneben und ruft Hermes. Instrument hört diese eine Datei auf Instrumente und schreibt sie nach Album Artist. Alle analysieren und Markierte analysieren nehmen das Hör-Modell aus den Einstellungen. Sind die Worker schon belegt, kommt die Meldung mit den laufenden Tracks.</li>
     <li>Instrumentanalyse hört alle Dateien in der Liste und schreibt die Instrumente nach Album Artist. Nicht nach User 1.</li>
     <li>Subgenres werden mit Leerzeichen um den Schrägstrich geschrieben: Genre1 / Genre2.</li>
     <li>Über der Liste filtern Genre, Subgenres, Album Artist und Status. * ist der Standard und zeigt alle. Ein leeres Feld zeigt nur leere Zellen. Techno oder Wartend heißt enthalten, -techno oder -fehler heißt nicht enthalten. Sortierung ist A bis Z oder Z bis A, auch für Status.</li>
@@ -98,9 +98,10 @@ API_SERVER_PORT=8642</pre>
   <h2>Workflow</h2>
   <ol>
     <li>Settings, Help and Versions open their own window. The list stays. Back closes that window. If the buttons do not fit, the toolbar and the row wrap to two lines.</li>
-    <li>Update in Settings downloads the latest GitHub release and replaces only the program files. config.json, done.json and the models stay. Then close the server window and start start_gui.bat again.</li>
-    <li>Set a limit and refresh. Ignore finished when loading skips files whose genre or composer already has data, and tracks marked Finished. Finished removes that row and loads the next track. Load new data fetches the next tracks with empty genre and composer.</li>
+    <li>Update in Settings downloads the latest GitHub release and replaces only the program files. config.json and the models stay. Then close the server window and start start_gui.bat again.</li>
+    <li>Set a limit and refresh. Load new data fetches the next tracks with empty genre and composer.</li>
     <li>Start keeps genre, composer and year already shown. Web search lets Hermes look the track up. Direct analyses from tags, filename and folder only, without web search, for a small or slow model. The timeout in Settings limits how long a reply may take. 0 waits with no limit.</li>
+    <li>EffNet, MAEST and both sit in the row and listen to that one file, even if subgenres are already there. API stays next to them and calls Hermes. Instrument hears the instruments of that one file and writes them to album artist.</li>
     <li>Instrument analysis listens to every file in the list and writes the instruments to album artist, not User 1.</li>
     <li>Subgenres are written with spaces around the slash: Genre1 / Genre2.</li>
     <li>Above the list, filter genre, subgenres, album artist and status. * is the default and shows all. An empty field shows only empty cells. Techno or Waiting means contains, -techno or -error means does not contain. Sort is A to Z or Z to A, including status.</li>
