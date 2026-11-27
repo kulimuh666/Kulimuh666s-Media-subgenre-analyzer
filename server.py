@@ -426,7 +426,6 @@ def read_tags(filepath: str) -> Dict[str, Any]:
         'date': '',
         'user1': '',
         'albumartist': '',
-        'group': '',
         'filename': Path(filepath).name,
         'filepath': filepath,
     }
@@ -469,15 +468,6 @@ def read_tags(filepath: str) -> Dict[str, Any]:
             except (IndexError, KeyError, TypeError):
                 pass
 
-        if suffix == '.mp3':
-            try:
-                from mutagen.id3 import ID3 as _RawID3
-                raw_id3 = _RawID3(str(p))
-                frame = raw_id3.get('TIT1')
-                if frame and frame.text:
-                    tags['group'] = str(frame.text[0]).strip()
-            except Exception:
-                pass
         if suffix == '.mp3' and not (tags['artist'] and tags['title']):
             try:
                 from mutagen.id3 import ID3
@@ -2043,7 +2033,6 @@ class VDJHandler(BaseHTTPRequestHandler):
                     "composer": composer,
                     "user1": tags.get("user1") or "",
                     "albumartist": tags.get("albumartist") or "",
-                    "group": tags.get("group") or "",
                     "jahr": year,
                     "status": "unsupported",
                     "error": support_error,
@@ -2060,7 +2049,6 @@ class VDJHandler(BaseHTTPRequestHandler):
                 "composer": composer,
                 "user1": tags.get("user1") or "",
                 "albumartist": tags.get("albumartist") or "",
-                "group": tags.get("group") or "",
                 "jahr": year,
                 "status": "skipped" if (composer and year) else "pending",
             })

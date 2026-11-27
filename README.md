@@ -52,7 +52,6 @@ Die **ERGEBNISSE-Queryzeile = Row** (Filter- und Sortier-Leiste + Tabellenzeilen
 | Filter Genre / Subgenres / Album Artist / Status | `*` zeigt alle, leeres Feld nur leere Zellen; Techno enthält, `-techno` schließt aus (inkl. Peak Time Techno / Driving Techno / Psytrance) |
 | Sortierung | Keine / Datei / Genre / Subgenres / Album Artist / Jahr / Status |
 | Richtung | A → Z (aufsteigend) / Z → A (absteigend) |
-| Gruppierung | Keine / TIT1 (Content Group) — gruppiert nach Künstler-Werk (TIT1) |
 | Reihenfolge festhalten | friert die aktuelle Sortierung ein, statt sie bei jeder Auto-Aktualisierung neu zu mischen |
 | Checkbox | Auswahl für „Markierte analysieren" |
 | # | Zeilennummer (sortiert) |
@@ -112,7 +111,7 @@ Same as German section above — GUI screenshot uses fictional demo data (target
 ### Buttons — short frame
 - **Header:** Einstellungen · Hilfe · Versionen · GitHub · DE/EN · version/status pills
 - **LAUF:** target folder (+ folder picker), limit, Alle analysieren, Markierte analysieren, Instrumentanalyse, Stop, Aktualisieren, Neue Daten laden, Log leeren
-- **Queryzeile = Row (filter/sort/group + per-track rows):** filter Genre / Subgenres / Album Artist / Status (`*` = all, empty = empty cells, `Techno` includes, `-techno` excludes), Sortierung, Richtung (A→Z / Z→A), Gruppierung (TIT1), Reihenfolge festhalten, checkbox, #, DATEI, GENRE / SUBGENRES / ALBUM ARTIST / JAHR (✏️ per cell), STATUS, EffNet · MAEST · Beide · API · Instrument · ▶ · Ordner · Genre
+- **Queryzeile = Row (filter/sort + per-track rows):** filter Genre / Subgenres / Album Artist / Status (`*` = all, empty = empty cells, `Techno` includes, `-techno` excludes), Sortierung, Richtung (A→Z / Z→A), Reihenfolge festhalten, checkbox, #, DATEI, GENRE / SUBGENRES / ALBUM ARTIST / JAHR (✏️ per cell), STATUS, EffNet · MAEST · Beide · API · Instrument · ▶ · Ordner · Genre
 - **Konsole + Player:** log strip · ▶ / time / volume / ⋯
 - **Einstellungen-Seite:** Hermes-Adresse/Key, Worker, Timeout, Modus, lokale Modelle, Python, Runtime/Audio-Modelle, 3B/1.5B, Lokal starten, API testen, Speichern
 

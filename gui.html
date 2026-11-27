@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kulimuh666's Media Subgenre Analyzer V.0047</title>
+<title>Kulimuh666's Media Subgenre Analyzer V.0048</title>
 <style>
 :root {
   --bg-primary: #0d1117;
@@ -136,9 +136,6 @@ td.file-cell {
 .freeze-check { display: flex; align-items: center; gap: 6px; padding: 0 16px 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer; user-select: none; }
 .freeze-check input { cursor: pointer; }
 tr.filter-hide { display: none; }
-tr.group-header > td { background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: var(--text-primary); }
-tr.group-header .group-name { text-transform: uppercase; }
-tr.group-header .group-count { float: right; font-weight: 400; color: var(--text-secondary); letter-spacing: 0; }
 .field input, .field select {
   width: 100%;
   padding: 8px 10px;
@@ -345,7 +342,7 @@ body { padding-bottom: 52px; }
 
 <!-- Header -->
 <div class="header">
-  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0047</span></h1>
+  <h1>🎵 Kulimuh666's Media Subgenre Analyzer <span class="badge">V.0048</span></h1>
   <span class="badge">Hermes Bridge</span>
   <span class="badge" id="connStatus">⚪ disconnected</span>
   <a class="badge" href="settings.html" data-i18n="settings" onclick="return openPage('settings.html','analyzer-settings')">Einstellungen</a>
@@ -442,13 +439,6 @@ body { padding-bottom: 52px; }
           <option value="desc" data-i18n="sortDesc">Z → A</option>
         </select>
       </div>
-      <div class="field">
-        <label for="groupBy" data-i18n="groupBy">Gruppierung</label>
-        <select id="groupBy" onchange="applyQuery()">
-          <option value="" data-i18n="groupNone">Keine</option>
-          <option value="group" data-i18n="groupTit1">TIT1 (Content Group)</option>
-        </select>
-      </div>
     </div>
     <label class="freeze-check" id="freezeOrderLabel">
       <input type="checkbox" id="freezeOrder" onchange="applyQuery()">
@@ -512,7 +502,6 @@ const I18N = {
     filterGenre: 'Filter Genre', filterSub: 'Filter Subgenres', filterAlbum: 'Filter Album Artist', filterStatus: 'Filter Status',
     filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Wartend  -fehler', filterHint: '* zeigt alle. Ein leeres Feld zeigt nur leere Zellen. Techno heißt enthalten, -techno heißt nicht enthalten.',
     sortBy: 'Sortierung', sortDir: 'Richtung', sortNone: 'Keine', sortAsc: 'A → Z', sortDesc: 'Z → A', freezeOrder: 'Reihenfolge festhalten',
-    groupBy: 'Gruppierung', groupNone: 'Keine', groupTit1: 'Gruppierung / Werk (TIT1)', groupEmpty: '(kein TIT1)', groupTracks: '{n} Tracks',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Beide',
     results: '📊 Ergebnisse', file: 'Datei',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album Artist', year: 'Jahr', status: 'Status',
     emptyResults: 'Noch keine Ergebnisse — Starte die Analyse.', console: '📟 Konsole',
@@ -546,8 +535,7 @@ const I18N = {
     analyzeAll: 'Analyze all', analyzeMarked: 'Analyze marked', instruments: 'Instrument analysis', noneMarked: 'No file marked.',
     filterGenre: 'Filter genre', filterSub: 'Filter subgenres', filterAlbum: 'Filter album artist', filterStatus: 'Filter status',
     filterPlaceholder: 'Techno  -hard', filterStatusPlaceholder: 'Waiting  -error', filterHint: '* shows all. An empty field shows only empty cells. Techno means contains, -techno means does not contain.',
-    sortBy: 'Sort', sortDir: 'Direction', sortNone: 'None', sortAsc: 'A → Z', sortDesc: 'Z → A', freezeOrder: 'Freeze row order',
-    groupBy: 'Group by', groupNone: 'None', groupTit1: 'Grouping / Work (TIT1)', groupEmpty: '(no TIT1)', groupTracks: '{n} tracks',
+    sortBy: 'Sort by', sortDir: 'Direction', sortNone: 'None', sortAsc: 'A → Z', sortDesc: 'Z → A', freezeOrder: 'Freeze order',
     localBtn: 'Local', apiBtn: 'API', bothBtn: 'Both',
     results: '📊 Results', file: 'File',    genre: 'Genre', subgenres: 'Subgenres', user1: 'User 1', albumArtist: 'Album artist', year: 'Year', status: 'Status',
     emptyResults: 'No results yet — start the analysis.', console: '📟 Console',
@@ -990,41 +978,12 @@ function applyQuery() {
     row.classList.toggle('filter-hide', !ok);
   });
   const freeze = $('freezeOrder')?.checked;
-  const groupMode = $('groupBy')?.value === 'group';
-  body.querySelectorAll('tr.group-header').forEach(h => h.remove());
-  if (groupMode) {
-    const visible = rows.filter(r => !r.classList.contains('filter-hide'));
-    const groups = new Map();
-    visible.forEach(row => {
-      const key = row.dataset.group || '';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(row);
-    });
-    const keys = [...groups.keys()].sort((a, b) => {
-      if (a === b) return 0;
-      if (!a) return 1;
-      if (!b) return -1;
-      return a.localeCompare(b, 'de', { sensitivity: 'base' });
-    });
-    keys.forEach(key => {
-      const groupRows = groups.get(key);
-      if (col && !freeze) {
-        groupRows.sort((a, b) => dir * rowSortValue(a, col).localeCompare(rowSortValue(b, col), 'de', { numeric: true, sensitivity: 'base' }));
-      }
-      const header = document.createElement('tr');
-      header.className = 'group-header';
-      // Safe: label is escapeHtml()'d; i18n strings and counts are constant/number.
-      header.innerHTML = `<td colspan="9"><span class="group-name">${escapeHtml(key || t('groupEmpty'))}</span><span class="group-count">${t('groupTracks', { n: groupRows.length })}</span></td>`;
-      body.appendChild(header);
-      groupRows.forEach(row => body.appendChild(row));
-    });
-    rows.filter(r => r.classList.contains('filter-hide')).forEach(r => body.appendChild(r));
-  } else if (col && !freeze) {
+  if (col && !freeze) {
     rows.sort((a, b) => dir * rowSortValue(a, col).localeCompare(rowSortValue(b, col), 'de', { numeric: true, sensitivity: 'base' }));
     rows.forEach(row => body.appendChild(row));
   }
   let n = 0;
-    // Renumber in current DOM order (grouping reorders rows via appendChild).
+    // Renumber in current DOM order.
     [...body.querySelectorAll('tr[data-fp]:not(.filter-hide)')].forEach(row => {
       n += 1;
       const num = row.querySelectorAll('td')[1];
@@ -1264,7 +1223,7 @@ function toggleAll(on) {
   });
 }
 
-function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, artist, title, extra, group) {
+function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, artist, title, extra) {
   const tbody = $('resultsBody');
   if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
 
@@ -1274,7 +1233,6 @@ function addResultRow(num, fp, name, status, genre, subgenres, jahr, error, arti
   tr.dataset.status = status;
   tr.dataset.subgenres = subgenres;
   tr.dataset.extra = extra || '';
-  tr.dataset.group = group || '';
   tr.innerHTML = `
     <td class="check-col"><input type="checkbox" class="row-check" ${marked.has(fp) ? 'checked' : ''} onchange="rememberMark(this)"></td>
     <td>${num}</td>
@@ -1370,7 +1328,7 @@ async function loadFiles(mode) {
     seenTracks = new Set();
     (data.files || []).forEach(f => {
       const status = f.status === 'skipped' ? 'skipped' : f.status === 'unsupported' ? 'unsupported' : 'pending';
-      addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, f.filepath, f.filename, status, f.genre || '', f.composer || '', f.jahr || '', f.error || '', f.artist || '', f.title || '', extraField() === 'albumartist' ? (f.albumartist || '') : (f.user1 || ''), f.group || '');
+      addResultRow(document.querySelectorAll('#resultsBody tr[data-fp]').length + 1, f.filepath, f.filename, status, f.genre || '', f.composer || '', f.jahr || '', f.error || '', f.artist || '', f.title || '', extraField() === 'albumartist' ? (f.albumartist || '') : (f.user1 || ''));
     });
     const complete = data.complete || 0;
     log(t('listSummary', {shown: data.shown || 0, count: data.count || 0, complete: complete}), 'info');
