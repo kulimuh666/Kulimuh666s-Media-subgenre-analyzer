@@ -106,13 +106,87 @@ Zeigt die Aktivität des Backends (Config-Load, Trackliste, Analyse).
 Writes subgenres and the year into audio files. Files stay on the PC that starts `start_gui.bat`. Hermes only returns the judgement. Instruments go to album artist (TPE2).
 
 ### Screenshots
-Same as German section above — GUI screenshot uses fictional demo data (target folder and log are blanked), settings screenshot masks secrets.
+Same screenshots as the German section above — GUI screenshot uses fictional demo data (target folder and log are blanked), settings screenshot masks secrets.
 
-### Buttons — short frame
-- **Header:** Einstellungen · Hilfe · Versionen · GitHub · DE/EN · version/status pills
-- **LAUF:** target folder (+ folder picker), limit, Alle analysieren, Markierte analysieren, Instrumentanalyse, Stop, Aktualisieren, Neue Daten laden, Log leeren
-- **Queryzeile = Row (filter/sort + per-track rows):** filter Genre / Subgenres / Album Artist / Status (`*` = all, empty = empty cells, `Techno` includes, `-techno` excludes), Sortierung, Richtung (A→Z / Z→A), Reihenfolge festhalten, checkbox, #, DATEI, GENRE / SUBGENRES / ALBUM ARTIST / JAHR (✏️ per cell), STATUS, EffNet · MAEST · Beide · API · Instrument · ▶ · Ordner · Genre
-- **Konsole + Player:** log strip · ▶ / time / volume / ⋯
-- **Einstellungen-Seite:** Hermes-Adresse/Key, Worker, Timeout, Modus, lokale Modelle, Python, Runtime/Audio-Modelle, 3B/1.5B, Lokal starten, API testen, Speichern
+### What each button does
 
-Copy `config.example.json` to `config.json` and fill in the key and target folder. Models live locally in `models/` and are not in the zip.
+The **results query row = Row** (filter/sort bar + per-track row table) describes everything in the results view — the filter/sort header and the one-row-per-track table.
+
+#### Header
+| Element | Function |
+|---|---|
+| Settings (Einstellungen) | opens the settings (`settings.html`) |
+| Help (?) | opens the help (`hilfe.html`) |
+| Versionen | opens the version history (`versionen.html`) |
+| GitHub | opens the repository |
+| DE / EN (Flags) | switches UI language (Deutsch ↔ English) |
+| Version / Hermes-Bridge badge | shows version and connection status of the Hermes bridge (disconnected/connected) |
+
+#### LAUF panel (top left)
+| Element | Function |
+|---|---|
+| Ziel-Ordner (target folder, input) | the folder with audio files |
+| Ordner wählen | native folder picker — sets the folder and loads the files |
+| Limit (max. tracks) | max. number of loaded files |
+| Alle analysieren | analyses all visible tracks |
+| Markierte analysieren | analyses only the checked rows (checkbox) |
+| Instrumentanalyse | listens to all visible files and writes the instruments to album artist (TPE2) |
+| Stop | stops a running analysis |
+| Aktualisieren | reloads the config and updates the rows |
+| Neue Daten laden | forces a reload of the track list (rescan) |
+| Log leeren | clears the console |
+
+#### Query row = Row (filter/sort bar + per-track row table)
+| Element | Function |
+|---|---|
+| Filter Genre / Subgenres / Album Artist / Status | `*` shows all, empty field only empty cells; `Techno` includes, `-techno` excludes (incl. Peak Time Techno / Driving Techno / Psytrance) |
+| Sortierung | Keine / Datei / Genre / Subgenres / Album Artist / Jahr / Status |
+| Richtung | A → Z (ascending) / Z → A (descending) |
+| Reihenfolge festhalten | freezes the current sort instead of re-mixing it on every auto-update |
+| Checkbox | selection for "Markierte analysieren" |
+| # | row number (sorted) |
+| DATEI | file name (hover: full path) |
+| GENRE / SUBGENRES / ALBUM ARTIST / JAHR | ID3 cells — ✏️ pencil button opens the edit modal for the cell |
+| STATUS | status badge (e.g. "Überspringen" = finished track, "Wartend" = still to analyze) |
+| EffNet | analyzes the track with the local EffNet model (genre) |
+| MAEST | analyzes with the local MAEST model (genre) |
+| Beide | EffNet + MAEST, combined |
+| API | sends the track to the Hermes API (LLM judgement, writes year/subgenres) |
+| Instrument | per-track instrument analysis → writes to album artist (TPE2) |
+| ▶ / Ordner / Genre | ▶️ play track · 📁 reveal in file manager · ✏️ open subgenre edit |
+
+#### Console
+Shows backend activity (config load, track list, analysis).
+
+#### Player bar (bottom)
+| Element | Function |
+|---|---|
+| ▶️ | Play/pause |
+| Time + progress bar | shows/jumps position |
+| Speaker | mute/volume |
+| ⋯ | player options |
+
+#### Settings page
+| Element | Function |
+|---|---|
+| Hermes-API address + API key | destination of the LLM |
+| Worker | max. parallel analyses (1/2/3/5) |
+| Timeout | max. wait time for the Hermes response |
+| Modus | Websuche / Direkt (small LLM, only tags + file name) / Audio (listens to the file) |
+| Lokales Hör-Modell | EffNet / MAEST / Beide, combined |
+| Subgenres in Tag | target tag for subgenres (Composer TCOM / Genre TCON / Artist TPE1 / Album Artist TPE2 / Conductor TPE3 / Title TIT2 / TIT1 / Album TALB / Custom TXXX) |
+| Instrumente in Tag | target tag for instruments (identical) |
+| Python für Audio + Python suchen | Python interpreter with mutagen (e.g. 3.11–3.14) |
+| Direkte Analyse über + Modelle | Hermes (API) / local llama.cpp (RTX, models/) + 3B / 1.5B / Audio-Modelle |
+| Zweite LLM zum Kürzen (Checkbox) | separate summarization |
+| Runtime laden | loads the local llama.cpp engine |
+| Audio-Modelle laden | loads EffNet/MAEST (.npz) |
+| 3B laden / 1.5B laden | loads the respective LLM model |
+| Lokal starten | starts the local llama.cpp server |
+| API testen | tests the Hermes connection |
+| Speichern | saves the settings |
+| Hilfe (?) | opens the help |
+| DE / EN (Flags) | UI language |
+
+### Setup
+Copy `config.example.json` to `config.json` and fill in the key and target folder. Models live locally in `models/` and are not in the zip. Release zip and git without key, LAN address, user paths, models, music, or `config.json`.
