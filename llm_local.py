@@ -19,20 +19,63 @@ RUNTIME = ROOT / "runtime"
 ANALYZE_PORT = 8081
 SUMMARY_PORT = 8082
 
-CATALOG = {
-    "runtime": {
-        "label": "llama.cpp CUDA 12 (b12651)",
+_cached_gpu = None
+
+
+def detect_gpu():
+    """Detect GPU vendor on Windows. Returns 'nvidia', 'amd', 'other' or 'unknown'."""
+    global _cached_gpu
+    if _cached_gpu is not None:
+        return _cached_gpu
+    text = ""
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"],
+            capture_output=True, text=True, timeout=45, encoding="utf-8", errors="replace",
+        )
+        text = " ".join((out.stdout or "").splitlines()).lower()
+    except Exception:
+        text = ""
+    if any(k in text for k in ("nvidia", "geforce", "quadro", "rtx", "gtx", "tesla", "titan", "apollo")):
+        _cached_gpu = "nvidia"
+        return _cached_gpu
+    if any(k in text for k in ("radeon", "amd", "vega", "firepro")):
+        _cached_gpu = "amd"
+        return _cached_gpu
+    _cached_gpu = "other" if text else "unknown"
+    return _cached_gpu
+
+
+def runtime_catalog(gpu=None):
+    """Runtime build needed for the detected GPU. CUDA is NVIDIA-only; Vulkan covers AMD/Intel/generic."""
+    gpu = gpu or detect_gpu()
+    if gpu == "nvidia":
+        return {
+            "label": "llama.cpp CUDA 12 (b12651)",
+            "files": [
+                {
+                    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12651/llama-b12651-bin-win-cuda-12.4-x64.zip",
+                    "name": "llama-b12651-bin-win-cuda-12.4-x64.zip",
+                },
+                {
+                    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12651/cudart-llama-bin-win-cuda-12.4-x64.zip",
+                    "name": "cudart-llama-bin-win-cuda-12.4-x64.zip",
+                },
+            ],
+        }
+    return {
+        "label": "llama.cpp Vulkan 1.4 (b12651)",
         "files": [
             {
-                "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12651/llama-b12651-bin-win-cuda-12.4-x64.zip",
-                "name": "llama-b12651-bin-win-cuda-12.4-x64.zip",
-            },
-            {
-                "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12651/cudart-llama-bin-win-cuda-12.4-x64.zip",
-                "name": "cudart-llama-bin-win-cuda-12.4-x64.zip",
+                "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12651/llama-b12651-bin-win-vulkan-x64.zip",
+                "name": "llama-b12651-bin-win-vulkan-x64.zip",
             },
         ],
-    },
+    }
+
+
+CATALOG = {
     "analyze": {
         "label": "Qwen2.5-3B-Instruct Q4_K_M",
         "files": [
@@ -86,11 +129,40 @@ _lock = threading.Lock()
 _jobs = {}
 
 
+def _needed_build_token(gpu=None):
+    gpu = gpu or detect_gpu()
+    return "cuda" if gpu == "nvidia" else "vulkan"
+
+
+def _installed_build():
+    """Build of the runtime already present in runtime/: 'cuda', 'vulkan' or None."""
+    for f in RUNTIME.rglob("*.zip"):
+        name = f.name.lower()
+        if "vulkan" in name:
+            return "vulkan"
+        if "cuda" in name:
+            return "cuda"
+    for exe in RUNTIME.rglob("llama-server.exe"):
+        folder = exe.parent.name.lower()
+        if "vulkan" in folder:
+            return "vulkan"
+        if "cuda" in folder:
+            return "cuda"
+    if any(RUNTIME.rglob("ggml-cuda.dll")):
+        return "cuda"
+    if any(RUNTIME.rglob("ggml-vulkan.dll")):
+        return "vulkan"
+    return None
+
+
 def _server_exe():
+    wanted = _needed_build_token()
+    installed = _installed_build()
+    if installed and installed != wanted:
+        return None
     for name in ("llama-server.exe", "llama.exe"):
-        found = list(RUNTIME.rglob(name))
-        if found:
-            return found[0]
+        for exe in RUNTIME.rglob(name):
+            return exe
     return None
 
 
@@ -111,7 +183,12 @@ def status():
     jobs = {}
     with _lock:
         jobs = {key: dict(value) for key, value in _jobs.items()}
+    gpu = detect_gpu()
+    catalog = runtime_catalog(gpu)
     return {
+        "gpu": gpu,
+        "gpu_label": {"nvidia": "NVIDIA (CUDA)", "amd": "AMD (Vulkan)", "other": "Sonstige (Vulkan)", "unknown": "Unbekannt (Vulkan)"}.get(gpu, gpu),
+        "runtime_label": catalog["label"],
         "runtime": _server_exe() is not None,
         "analyze_model": _model_path("analyze").is_file(),
         "summarize_model": _model_path("summarize").is_file(),
@@ -122,8 +199,11 @@ def status():
         "runtime_dir": str(RUNTIME),
         "jobs": jobs,
         "catalog": {
-            key: {"label": item["label"], "urls": [f["url"] for f in item["files"]]}
-            for key, item in CATALOG.items()
+            "runtime": {"label": catalog["label"], "urls": [f["url"] for f in catalog["files"]]},
+            **{
+                key: {"label": item["label"], "urls": [f["url"] for f in item["files"]]}
+                for key, item in CATALOG.items()
+            },
         },
     }
 
@@ -176,7 +256,7 @@ def _download_one(url, dest: Path):
 
 
 def _run_download(which):
-    item = CATALOG[which]
+    item = runtime_catalog(detect_gpu()) if which == "runtime" else CATALOG[which]
     try:
         for spec in item["files"]:
             dest = (RUNTIME if which == "runtime" else MODELS) / spec["name"]
@@ -217,7 +297,7 @@ def ensure_audio_models() -> tuple[bool, str]:
 
 
 def start_download(which):
-    if which not in CATALOG:
+    if which not in CATALOG and which != "runtime":
         raise ValueError("unknown download")
     with _lock:
         if _jobs.get(which, {}).get("state") == "downloading":

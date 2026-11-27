@@ -2556,6 +2556,16 @@ def _kill_stale_servers() -> None:
 
 def prepare_runtime() -> None:
     print("Pruefe Abhaengigkeiten...")
+    # GPU-Erkennung: wählt die richtige llama.cpp-Build (CUDA nur für NVIDIA,
+    # Vulkan deckt AMD/Intel/sonstiges ab)
+    gpu = llm_local.detect_gpu()
+    needed = llm_local.runtime_catalog(gpu)
+    installed = llm_local._installed_build()
+    print(f"GPU erkannt: {gpu.upper()} -> Runtime: {needed['label']}")
+    if installed and installed != llm_local._needed_build_token(gpu):
+        print(f"Hinweis: installierte Runtime ist '{installed.upper()}' - fuer {gpu.upper()} ist {needed['label']} noetig. 'Runtime laden' (Einstellungen) laedt die richtige Build.")
+    elif not llm_local._server_exe():
+        print("Runtime fehlt - 'Runtime laden' (Einstellungen) laedt die richtige Build.")
     if mutagen_ready():
         print(f"mutagen OK")
     else:

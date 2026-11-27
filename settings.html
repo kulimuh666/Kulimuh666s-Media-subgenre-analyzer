@@ -166,8 +166,9 @@ button {
     <label for="llmBackend" data-i18n="backend">Direkte Analyse über</label>
     <select id="llmBackend">
       <option value="hermes" data-i18n="backendHermes">Hermes</option>
-      <option value="local" data-i18n="backendLocal">Lokale llama.cpp (RTX, Ordner models)</option>
+      <option value="local" data-i18n="backendLocal">Lokale llama.cpp (GPU-Runtime, Ordner models)</option>
     </select>
+    <div class="hint" data-i18n="gpuHint">GPU wird automatisch erkannt. NVIDIA → CUDA-Runtime, AMD/sonstige → Vulkan-Runtime.</div>
     <div class="hint" data-i18n="backendHint">ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.</div>
   </div>
   <div class="field">
@@ -204,9 +205,9 @@ const I18N = {
     pythonPath: 'Python für Audio',    pythonHint: 'EffNet und MAEST brauchen Python 3.11 bis 3.14. 3.15 hat kein onnxruntime. Fehlt eins, installiert der Server 3.12.',
     findPython: 'Python suchen', pythonNone: 'Kein Python 3.11–3.14 gefunden. Der nächste Lauf installiert 3.12.',
     pythonNoOnnx: 'Python 3.15 geht nicht. Gespeichert ist ein passendes, onnxruntime kommt beim Lauf:\n',
-    backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (RTX, Ordner models)',
+    backend: 'Direkte Analyse über', backendHermes: 'Hermes', backendLocal: 'Lokale llama.cpp (GPU-Runtime, Ordner models)',
     backendHint: 'ChatMusician ist musikspezifisch, aber für Noten, nicht für Techno-Subgenres. Die 3B reicht für Tags, Dateiname und Ordner. Die 1.5B kürzt die Liste danach und erfindet keine Stile.',
-    summarize: 'Zweite LLM zum Kürzen', dlRuntime: 'Runtime laden', dlAudio: 'Audio-Modelle laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
+    summarize: 'Zweite LLM zum Kürzen', gpuHint: 'GPU wird automatisch erkannt. NVIDIA → CUDA-Runtime, AMD/sonstige → Vulkan-Runtime.', dlRuntime: 'Runtime laden', dlAudio: 'Audio-Modelle laden', dlAnalyze: '3B laden', dlSummary: '1.5B laden', llmStart: 'Lokal starten'
   },
   en: {
     title: 'Settings', back: 'Back', help: '? Help', workers: 'Workers',
@@ -223,9 +224,9 @@ const I18N = {
     pythonPath: 'Python for audio',    pythonHint: 'EffNet and MAEST need Python 3.11 to 3.14. 3.15 has no onnxruntime. If none is installed, the server installs 3.12.',
     findPython: 'Find Python', pythonNone: 'No Python 3.11–3.14 found. The next run installs 3.12.',
     pythonNoOnnx: 'Python 3.15 cannot be used. A compatible one is saved; onnxruntime is installed on the next run:\n',
-    backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (RTX, models folder)',
+    backend: 'Direct analysis via', backendHermes: 'Hermes', backendLocal: 'Local llama.cpp (GPU runtime, models folder)',
     backendHint: 'ChatMusician is music-specific, but for notation, not techno subgenres. The 3B is enough for tags, filename and folder. The 1.5B shortens that list and cannot invent styles.',
-    summarize: 'Second LLM to shorten', dlRuntime: 'Download runtime', dlAudio: 'Download audio models', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
+    summarize: 'Second LLM to shorten', gpuHint: 'GPU is auto-detected. NVIDIA → CUDA runtime, AMD/other → Vulkan runtime.', dlRuntime: 'Download runtime', dlAudio: 'Download audio models', dlAnalyze: 'Download 3B', dlSummary: 'Download 1.5B', llmStart: 'Start local'
   }
 };
 let lang = localStorage.getItem('vdj.lang') || 'de';
@@ -356,7 +357,7 @@ async function refreshLlm() {
     if (!res.ok) return;
     const data = await res.json();
     const jobs = Object.entries(data.jobs || {}).map(([k, v]) => `${k}: ${v.state || ''} ${v.error || ''}`).join(' | ');
-    $('llmStatus').textContent = `Runtime ${data.runtime ? 'da' : 'fehlt'} · Audio ${data.audio_models ? 'da' : 'fehlt'} · 3B ${data.analyze_model ? 'da' : 'fehlt'} · 1.5B ${data.summarize_model ? 'da' : 'fehlt'} · Ports ${data.analyze_up ? '8081' : '–'}/${data.summarize_up ? '8082' : '–'} ${jobs}`;
+    $('llmStatus').textContent = `${data.gpu_label || ''} · Runtime ${data.runtime ? 'da' : 'fehlt'} (${data.runtime_label || ''}) · Audio ${data.audio_models ? 'da' : 'fehlt'} · 3B ${data.analyze_model ? 'da' : 'fehlt'} · 1.5B ${data.summarize_model ? 'da' : 'fehlt'} · Ports ${data.analyze_up ? '8081' : '–'}/${data.summarize_up ? '8082' : '–'} ${jobs}`;
   } catch (e) { /* server down */ }
 }
 setInterval(refreshLlm, 3000);

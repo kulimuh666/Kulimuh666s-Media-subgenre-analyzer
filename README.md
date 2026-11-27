@@ -87,9 +87,9 @@ Zeigt die Aktivität des Backends (Config-Load, Trackliste, Analyse).
 | Subgenres in Tag | Ziel-Tag für Subgenres (Composer TCOM / Genre TCON / Artist TPE1 / Album Artist TPE2 / Conductor TPE3 / Title TIT2 / TIT1 / Album TALB / Custom TXXX) |
 | Instrumente in Tag | Ziel-Tag für Instrumente (identisch) |
 | Python für Audio + Python suchen | Python-Interpreter mit mutagen (z. B. 3.11–3.14) |
-| Direkte Analyse über + Modelle | Hermes (API) / lokale llama.cpp (RTX, models/) + 3B / 1.5B / Audio-Modelle |
+| Direkte Analyse über + Modelle | Hermes (API) / lokale llama.cpp (NVIDIA→CUDA, AMD/sonstige→Vulkan, models/) + 3B / 1.5B / Audio-Modelle |
 | Zweite LLM zum Kürzen (Checkbox) | separate Zusammenfassung |
-| Runtime laden | lädt die lokale llama.cpp-Engine |
+| Runtime laden | lädt die passende lokale llama.cpp-Engine (NVIDIA→CUDA, AMD/sonstige→Vulkan; GPU wird beim Start erkannt) |
 | Audio-Modelle laden | lädt EffNet/MAEST (.npz) |
 | 3B laden / 1.5B laden | lädt das jeweilige LLM-Modell |
 | Lokal starten | startet den lokalen llama.cpp-Server |
@@ -177,9 +177,9 @@ Shows backend activity (config load, track list, analysis).
 | Subgenres in Tag | target tag for subgenres (Composer TCOM / Genre TCON / Artist TPE1 / Album Artist TPE2 / Conductor TPE3 / Title TIT2 / TIT1 / Album TALB / Custom TXXX) |
 | Instrumente in Tag | target tag for instruments (identical) |
 | Python für Audio + Python suchen | Python interpreter with mutagen (e.g. 3.11–3.14) |
-| Direkte Analyse über + Modelle | Hermes (API) / local llama.cpp (RTX, models/) + 3B / 1.5B / Audio-Modelle |
+| Direkte Analyse über + Modelle | Hermes (API) / local llama.cpp (NVIDIA→CUDA, AMD/other→Vulkan, models/) + 3B / 1.5B / Audio-Modelle |
 | Zweite LLM zum Kürzen (Checkbox) | separate summarization |
-| Runtime laden | loads the local llama.cpp engine |
+| Runtime laden | loads the matching local llama.cpp engine (NVIDIA→CUDA, AMD/other→Vulkan; GPU auto-detected at startup) |
 | Audio-Modelle laden | loads EffNet/MAEST (.npz) |
 | 3B laden / 1.5B laden | loads the respective LLM model |
 | Lokal starten | starts the local llama.cpp server |
